@@ -63,4 +63,4 @@ export const Coordinates = [
   "h3",
   "h2",
   "h1",
-];
+] as const;
