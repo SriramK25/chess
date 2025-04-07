@@ -1,4 +1,5 @@
-import { Coordinates } from "../../../data/coordinatesData";
+import { readonlyCoordinates } from "../../../data/coordinatesData";
+import { Coordinate } from "../../../types/indexedAccessTypes";
 import Tile from "../factory/tileFactory";
 
 export default class Chessboard {
@@ -7,17 +8,25 @@ export default class Chessboard {
   tile: Tile[] = [];
 
   private constructor() {
-    Coordinates.forEach((coordinate) => {
+    readonlyCoordinates.forEach((coordinate) => {
       let tileColor: "white" | "black" = this.getTileColor(coordinate);
 
-      document
-        .querySelector<HTMLDivElement>("#chess-board")
-        ?.insertAdjacentHTML(
-          "beforeend",
-          this.generateTileHTML(coordinate, tileColor)
-        );
+      const chessboardElement: HTMLDivElement | null =
+        document.querySelector<HTMLDivElement>("#chess-board");
 
-      this.tile.push(new Tile(coordinate));
+      if (!chessboardElement) throw new Error("Chessboard not found...");
+
+      chessboardElement.insertAdjacentHTML(
+        "beforeend",
+        this.generateTileHTML(coordinate, tileColor)
+      );
+      const tileElement: HTMLDivElement | null =
+        chessboardElement.querySelector(`#tile-${coordinate}`);
+
+      if (!tileElement)
+        throw new Error("Tile not found while Initializing Chessboard");
+
+      this.tile.push(new Tile(coordinate, tileElement));
     });
   }
 
@@ -32,7 +41,7 @@ export default class Chessboard {
   }
 
   private generateTileHTML(
-    coordinate: (typeof Coordinates)[number],
+    coordinate: Coordinate,
     tileColor: "black" | "white"
   ): string {
     return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile"></div>`;

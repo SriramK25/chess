@@ -1,4 +1,4 @@
-export const Coordinates = [
+export const readonlyCoordinates = [
   "a8",
   "a7",
   "a6",

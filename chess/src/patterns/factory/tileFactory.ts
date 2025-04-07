@@ -1,13 +1,15 @@
-import { Coordinates } from "../../../data/coordinatesData.js";
+import { Coordinate } from "../../../types/indexedAccessTypes";
 
 export default class Tile {
-  #coordinate!: (typeof Coordinates)[number];
+  #coordinate!: Coordinate;
   player?: string;
   hasPiece = false;
   pieceData = {};
+  element!: HTMLDivElement;
 
-  constructor(coordinate: (typeof Coordinates)[number]) {
+  constructor(coordinate: Coordinate, tileElement: HTMLDivElement) {
     this.#coordinate = coordinate;
+    this.element = tileElement;
   }
 
   changeStatus(): void {

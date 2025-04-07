@@ -1,9 +1,12 @@
-import { Coordinates } from "../../../data/coordinatesData";
+import { Coordinates, Coordinate } from "../../../types/indexedAccessTypes";
+import { PieceType, Player } from "../../../types/unionTypes";
 
-export default interface Piece {
-  belongsTo: "white" | "black";
-  onTile: (typeof Coordinates)[number];
-  type: "king" | "queen" | "bishop" | "knight" | "rook" | "pawn";
+export default interface IPiece {
+  belongsTo: Player;
+  onTile: Coordinate;
+  type: PieceType;
   hasCaptured: boolean;
-  visibility: typeof Coordinates;
+  visibility: Set<Coordinates>;
+  startTile: Coordinate;
+  hasMoved: boolean;
 }
