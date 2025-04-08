@@ -1,4 +1,4 @@
-import { Coordinate } from "../../../types/indexedAccessTypes";
+import { Coordinate } from "../../types/indexedAccessTypes";
 
 export default class Tile {
   #coordinate!: Coordinate;
@@ -17,7 +17,7 @@ export default class Tile {
     if (!this.hasPiece) this.pieceData = {};
   }
 
-  getCoordinate(): string {
+  getCoordinate(): Coordinate {
     return this.#coordinate;
   }
 }

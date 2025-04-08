@@ -1,11 +1,12 @@
 import { readonlyCoordinates } from "../../../data/coordinatesData";
-import { Coordinate } from "../../../types/indexedAccessTypes";
+import { Coordinate } from "../../types/indexedAccessTypes";
+import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
 
 export default class Chessboard {
   static #instance: Chessboard | null = null;
 
-  tile: Tile[] = [];
+  tiles: Tile[] = [];
 
   private constructor() {
     readonlyCoordinates.forEach((coordinate) => {
@@ -26,7 +27,10 @@ export default class Chessboard {
       if (!tileElement)
         throw new Error("Tile not found while Initializing Chessboard");
 
-      this.tile.push(new Tile(coordinate, tileElement));
+      this.tiles.push(new Tile(coordinate, tileElement));
+
+      if (this.tiles.length === readonlyCoordinates.length)
+        Piece.spawn(this.tiles);
     });
   }
 

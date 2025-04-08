@@ -19,6 +19,10 @@
 }
 
 .tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   height: 6.4rem;
   width: 6.4rem;
   border-radius: 1px;
@@ -31,4 +35,12 @@
 
 .white-tile {
   background: #d6dde5;
+}
+
+img[id$="piece"] {
+  height: 90%;
+}
+
+img[id$="pawn-piece"] {
+  height: 70%;
 }

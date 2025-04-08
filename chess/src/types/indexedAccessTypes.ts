@@ -1,4 +1,4 @@
-import { readonlyCoordinates } from "../data/coordinatesData";
+import { readonlyCoordinates } from "../../data/coordinatesData";
 
 export type Coordinates = typeof readonlyCoordinates;
 
