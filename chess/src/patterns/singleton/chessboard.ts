@@ -1,54 +1,20 @@
-import { readonlyCoordinates } from "../../../data/coordinatesData";
-import { Coordinate } from "../../types/indexedAccessTypes";
 import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
+import { TileGraph } from "./tileGraph";
 
 export default class Chessboard {
   static #instance: Chessboard | null = null;
-
+  #graph: TileGraph = new TileGraph();
   tiles: Tile[] = [];
 
   private constructor() {
-    readonlyCoordinates.forEach((coordinate) => {
-      let tileColor: "white" | "black" = this.getTileColor(coordinate);
+    Tile.spawn(this.tiles);
 
-      const chessboardElement: HTMLDivElement | null =
-        document.querySelector<HTMLDivElement>("#chess-board");
+    Piece.spawn(this.tiles);
 
-      if (!chessboardElement) throw new Error("Chessboard not found...");
+    this.#graph.initialise(this.tiles);
 
-      chessboardElement.insertAdjacentHTML(
-        "beforeend",
-        this.generateTileHTML(coordinate, tileColor)
-      );
-      const tileElement: HTMLDivElement | null =
-        chessboardElement.querySelector(`#tile-${coordinate}`);
-
-      if (!tileElement)
-        throw new Error("Tile not found while Initializing Chessboard");
-
-      this.tiles.push(new Tile(coordinate, tileElement));
-
-      if (this.tiles.length === readonlyCoordinates.length)
-        Piece.spawn(this.tiles);
-    });
-  }
-
-  private getTileColor(coordinate: string): "black" | "white" {
-    const fileIndex = coordinate!.codePointAt(0);
-    const rankIndex = +coordinate[1];
-
-    if (!fileIndex)
-      throw new Error("Coordinate Error while generating Tile Color");
-
-    return (fileIndex + rankIndex) % 2 === 0 ? "black" : "white";
-  }
-
-  private generateTileHTML(
-    coordinate: Coordinate,
-    tileColor: "black" | "white"
-  ): string {
-    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile"></div>`;
+    // console.log(this.#graph);
   }
 
   static getInstance(): Chessboard {

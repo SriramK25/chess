@@ -14,9 +14,9 @@ export default class Piece implements IPiece {
   hasCaptured!: boolean;
   visibility!: Set<Coordinate>;
   startTile!: Coordinate;
-  hasMoved!: false;
+  hasMoved: false;
 
-  constructor(
+  private constructor(
     belongsTo: Player,
     onTile: Coordinate,
     pieceType: PieceType,
