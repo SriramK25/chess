@@ -1,11 +1,12 @@
 import { readonlyCoordinates } from "../../../data/coordinatesData";
 import { Coordinate } from "../../types/indexedAccessTypes";
+import Piece from "./pieceFactory";
 
 export default class Tile {
   #coordinate!: Coordinate;
   player?: string;
   hasPiece = false;
-  pieceData = {};
+  pieceData!: Piece;
   element!: HTMLDivElement;
 
   constructor(coordinate: Coordinate, tileElement: HTMLDivElement) {
@@ -55,7 +56,7 @@ export default class Tile {
 
   changeStatus(): void {
     this.hasPiece = !this.hasPiece;
-    if (!this.hasPiece) this.pieceData = {};
+    // if (!this.hasPiece) this.pieceData = null;
   }
 
   getCoordinate(): Coordinate {

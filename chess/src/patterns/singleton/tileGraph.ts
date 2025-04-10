@@ -1,7 +1,7 @@
 import { Coordinate } from "../../types/indexedAccessTypes";
 import Tile from "../factory/tileFactory";
 
-export class TileGraph {
+export default class TileGraph {
   #vertices: Map<Coordinate, Tile> = new Map();
   #edges: Map<Coordinate, Set<Coordinate>> = new Map();
 
@@ -68,15 +68,17 @@ export class TileGraph {
 
       if (!neighborTiles.length) return;
 
-      neighborTiles.forEach((coordinate, index) => {
-        const tile = tiles.find((tile) => tile.getCoordinate() === coordinate);
+      neighborTiles.forEach((coordinate) => {
+        const matchedTile = tiles.find(
+          (tile) => tile.getCoordinate() === coordinate
+        );
 
-        if (!tile) throw new Error("Error occured while initializing Graph");
+        if (!matchedTile)
+          throw new Error("Error occured while initializing Graph");
 
-        this.addVertex(coordinate, tile);
+        this.addVertex(coordinate, matchedTile);
 
-        if (index > 0 && index < neighborTiles.length - 1)
-          this.addEdge(neighborTiles[index - 1], coordinate);
+        this.addEdge(tile.getCoordinate(), coordinate);
       });
     });
   }

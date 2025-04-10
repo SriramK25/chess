@@ -15,6 +15,8 @@ export default class Piece implements IPiece {
   visibility!: Set<Coordinate>;
   startTile!: Coordinate;
   hasMoved: false;
+  hasPromotion!: boolean;
+  hasCastling!: boolean;
 
   private constructor(
     belongsTo: Player,
@@ -29,8 +31,11 @@ export default class Piece implements IPiece {
     this.visibility = new Set(["a1"]);
     this.startTile = startTile;
     this.hasMoved = false;
+    this.hasPromotion = pieceType === "pawn";
+    this.hasCastling = pieceType === "rook";
   }
 
+  // Setting Pieces on the Board and Updating the Internal States of Tile
   static spawn(tiles: Tile[]) {
     players.forEach((player) => {
       pieces.forEach((piece) => {
@@ -42,17 +47,22 @@ export default class Piece implements IPiece {
           tile.player = player;
           tile.element.insertAdjacentHTML(
             "beforeend",
-            this.getPiece(player, piece)
+            this.generatePiece(player, piece)
           );
-          // Have to Implement
-          //tile.pieceData = {};
+          tile.pieceData = new Piece(
+            player,
+            tile.getCoordinate(),
+            piece,
+            tile.getCoordinate()
+          );
         });
       });
     });
   }
 
-  private static getPiece(player: Player, pieceType: PieceType): string {
+  // Binds SVG to the <img /> tag and returns that as String
+  private static generatePiece(player: Player, pieceType: PieceType): string {
     const chessPiece = svg[`${player}_${pieceType}`];
-    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${pieceType}" />`;
+    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" />`;
   }
 }

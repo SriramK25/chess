@@ -9,6 +9,7 @@
 #chess-board-wrapper {
   border-radius: 0.4rem;
   outline: 1px dashed violet;
+  user-select: none;
 }
 
 #chess-board {
@@ -39,6 +40,7 @@
 
 img[id$="piece"] {
   height: 90%;
+  cursor: pointer;
 }
 
 img[id$="pawn-piece"] {
