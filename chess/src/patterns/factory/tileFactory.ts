@@ -49,7 +49,7 @@ export default class Tile {
     coordinate: Coordinate,
     tileColor: "black" | "white"
   ): string {
-    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile">${coordinate}</div>`;
+    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile"><span class="dev-util">${coordinate}</span></div>`;
   }
 
   changeStatus(): void {

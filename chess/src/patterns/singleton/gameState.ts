@@ -27,9 +27,11 @@ export default class GameState {
       if (
         !target.dataset.playableBy ||
         target.dataset.playableBy !== this.playerTurn
-      )
+      ) {
         return;
-      console.log(target);
+      }
+
+      target.parentElement?.classList.add("focused");
       this.allowPlayerToMovePiece(target);
     });
   }
