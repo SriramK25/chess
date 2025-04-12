@@ -37,7 +37,7 @@ export default class TileGraph {
     return true;
   }
 
-  initialise(tiles: Tile[]) {
+  initialise(tiles: Tile[]): void {
     tiles.forEach((tile) => {
       const fileIndex: number = tile.getCoordinate().charCodeAt(0);
       const rankIndex: number = Number(tile.getCoordinate()[1]);

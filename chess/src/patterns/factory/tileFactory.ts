@@ -1,34 +1,32 @@
 import { readonlyCoordinates } from "../../../data/coordinatesData";
 import { Coordinate } from "../../types/indexedAccessTypes";
+import { Player } from "../../types/unionTypes";
 import Piece from "./pieceFactory";
 
 export default class Tile {
-  #coordinate!: Coordinate;
+  #coordinate: Coordinate;
   player?: string;
   hasPiece = false;
   pieceData!: Piece;
-  element!: HTMLDivElement;
+  element: Element;
 
-  constructor(coordinate: Coordinate, tileElement: HTMLDivElement) {
+  constructor(coordinate: Coordinate, tileElement: Element) {
     this.#coordinate = coordinate;
     this.element = tileElement;
   }
 
-  static spawn(tiles: Tile[]) {
+  static spawn(chessboardElement: Element, tiles: Tile[]): void {
     readonlyCoordinates.forEach((coordinate) => {
       let tileColor: "white" | "black" = this.getTileColor(coordinate);
-
-      const chessboardElement: HTMLDivElement | null =
-        document.querySelector<HTMLDivElement>("#chess-board");
-
-      if (!chessboardElement) throw new Error("Chessboard not found...");
 
       chessboardElement.insertAdjacentHTML(
         "beforeend",
         this.generateTileHTML(coordinate, tileColor)
       );
-      const tileElement: HTMLDivElement | null =
-        chessboardElement.querySelector(`#tile-${coordinate}`);
+
+      const tileElement: Element | null = chessboardElement.querySelector(
+        `#tile-${coordinate}`
+      );
 
       if (!tileElement)
         throw new Error("Tile not found while Initializing Chessboard");
@@ -37,7 +35,7 @@ export default class Tile {
     });
   }
 
-  private static getTileColor(coordinate: string): "black" | "white" {
+  private static getTileColor(coordinate: string): Player {
     const fileIndex = coordinate!.codePointAt(0);
     const rankIndex = +coordinate[1];
 

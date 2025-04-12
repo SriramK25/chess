@@ -8,15 +8,16 @@ import Tile from "./tileFactory";
 import svg from "../../utils/defaultPieceSVGImporter";
 
 export default class Piece implements IPiece {
-  belongsTo!: Player;
-  onTile!: Coordinate;
-  type!: PieceType;
-  hasCaptured!: boolean;
-  visibility!: Set<Coordinate>;
-  startTile!: Coordinate;
+  id: string;
+  belongsTo: Player;
+  onTile: Coordinate;
+  type: PieceType;
+  hasCaptured: boolean;
+  visibility: Set<Coordinate>;
+  startTile: Coordinate;
   hasMoved: false;
-  hasPromotion!: boolean;
-  hasCastling!: boolean;
+  hasPromotion: boolean;
+  hasCastling: boolean;
 
   private constructor(
     belongsTo: Player,
@@ -24,6 +25,7 @@ export default class Piece implements IPiece {
     pieceType: PieceType,
     startTile: Coordinate
   ) {
+    this.id = crypto.randomUUID();
     this.belongsTo = belongsTo;
     this.onTile = onTile;
     this.type = pieceType;
@@ -63,6 +65,6 @@ export default class Piece implements IPiece {
   // Binds SVG to the <img /> tag and returns that as String
   private static generatePiece(player: Player, pieceType: PieceType): string {
     const chessPiece = svg[`${player}_${pieceType}`];
-    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" />`;
+    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" data-playable-by="${player}" />`;
   }
 }

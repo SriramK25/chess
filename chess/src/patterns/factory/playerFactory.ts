@@ -4,8 +4,8 @@ import { Player as PlayerType } from "../../types/unionTypes";
 import Tile from "./tileFactory";
 
 export default class Player {
-  name!: PlayerType;
-  piecesOnTiles!: Set<Coordinate>;
+  name: PlayerType;
+  piecesOnTiles: Set<Coordinate>;
   hasDoneCastling = false;
   hasKingInCheck = false;
 
