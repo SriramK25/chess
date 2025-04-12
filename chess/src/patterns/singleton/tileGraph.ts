@@ -82,4 +82,12 @@ export default class TileGraph {
       });
     });
   }
+
+  getNeighbors(coordinate: Coordinate): Set<Coordinate> {
+    return this.#edges.get(coordinate) ?? new Set();
+  }
+
+  getTileByVertex(coordinate: Coordinate): Tile {
+    return this.#vertices.get(coordinate)!;
+  }
 }

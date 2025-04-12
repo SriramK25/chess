@@ -45,17 +45,19 @@ export default class Piece implements IPiece {
           const tile = tiles.find((tile) => tile.getCoordinate() === startTile);
           if (!tile) throw new Error("Error occured while Spawning Pieces");
 
+          const tileCoordinate = tile.getCoordinate();
+
           tile.hasPiece = true;
           tile.player = player;
           tile.element.insertAdjacentHTML(
             "beforeend",
-            this.generatePiece(player, piece)
+            this.generatePiece(player, piece, tileCoordinate)
           );
           tile.pieceData = new Piece(
             player,
-            tile.getCoordinate(),
+            tileCoordinate,
             piece,
-            tile.getCoordinate()
+            tileCoordinate
           );
         });
       });
@@ -63,8 +65,12 @@ export default class Piece implements IPiece {
   }
 
   // Binds SVG to the <img /> tag and returns that as String
-  private static generatePiece(player: Player, pieceType: PieceType): string {
+  private static generatePiece(
+    player: Player,
+    pieceType: PieceType,
+    coordinate: Coordinate
+  ): string {
     const chessPiece = svg[`${player}_${pieceType}`];
-    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" data-playable-by="${player}" />`;
+    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" data-playable-by="${player}" data-piece="${pieceType}" data-coordinate="${coordinate}" />`;
   }
 }

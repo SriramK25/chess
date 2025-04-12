@@ -30,7 +30,7 @@ export default class Chessboard {
     this.#players = Player.initialisePlayers(this.#tiles);
 
     // Start the Game
-    this.#game.start(this.#element);
+    this.#game.start(this.#element, this.#graph);
   }
 
   static getInstance(): Chessboard {

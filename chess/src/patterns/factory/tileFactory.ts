@@ -10,12 +10,16 @@ export default class Tile {
   pieceData!: Piece;
   element: Element;
 
+  static chessboardElement: Element;
+
   constructor(coordinate: Coordinate, tileElement: Element) {
     this.#coordinate = coordinate;
     this.element = tileElement;
   }
 
   static spawn(chessboardElement: Element, tiles: Tile[]): void {
+    this.chessboardElement = chessboardElement;
+
     readonlyCoordinates.forEach((coordinate) => {
       let tileColor: "white" | "black" = this.getTileColor(coordinate);
 
@@ -59,5 +63,13 @@ export default class Tile {
 
   getCoordinate(): Coordinate {
     return this.#coordinate;
+  }
+
+  showAvailableMoves(availableTileToMovePawn: Tile[]) {
+    availableTileToMovePawn.forEach((tile) => {
+      tile.element.classList.add(
+        tile.hasPiece ? "capture-move" : "possible-move"
+      );
+    });
   }
 }
