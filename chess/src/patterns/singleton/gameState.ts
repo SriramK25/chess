@@ -8,6 +8,7 @@ export default class GameState {
 
   playerTurn: Player;
   history: Map<Player, Move[]>;
+  focusedTileThatHasPiece: Tile | null = null;
 
   private constructor(playerTurn: Player) {
     this.playerTurn = playerTurn;
@@ -29,6 +30,17 @@ export default class GameState {
   ): void {
     chessboardElement.addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
+
+      if (
+        target.classList.contains("possible-move") ||
+        target.classList.contains("capture-move")
+      ) {
+        this.movePiece(
+          tileGraph.getTileByVertex(target.dataset.coordinate as Coordinate)
+        );
+        return;
+      }
+
       if (
         !target.dataset.playableBy ||
         target.dataset.playableBy !== this.playerTurn
@@ -36,12 +48,13 @@ export default class GameState {
         return;
       }
 
-      if (target.classList.contains("possible-move")) {
-        this.movePiece();
-        return;
-      }
-
       target.parentElement?.classList.add("focused");
+
+      this.focusedTileThatHasPiece?.element.classList.remove("focused");
+
+      this.focusedTileThatHasPiece = tileGraph.getTileByVertex(
+        target.dataset.onCoordinate as Coordinate
+      );
       this.allowPlayerToMovePiece(target, tileGraph);
     });
   }
@@ -50,7 +63,7 @@ export default class GameState {
     pieceElement: HTMLElement,
     tileGraph: TileGraph
   ) {
-    const pieceCoordinate = pieceElement.dataset.coordinate as Coordinate;
+    const pieceCoordinate = pieceElement.dataset.onCoordinate as Coordinate;
 
     if (!pieceCoordinate) return;
 
@@ -58,7 +71,7 @@ export default class GameState {
 
     if (!targetTile || !targetTile.hasPiece) return;
 
-    switch (targetTile.pieceData.type) {
+    switch (targetTile.pieceData?.type) {
       case "pawn": {
         this.getMovesForPawn(targetTile, targetTile.getCoordinate(), tileGraph);
         return;
@@ -85,7 +98,7 @@ export default class GameState {
       ...tileGraph.getNeighbors(tileCoordinate),
     ];
 
-    const player = targetTile.pieceData.belongsTo;
+    const player = targetTile.pieceData?.belongsTo;
 
     const nextTileRankIndex =
       player === "white"
@@ -117,8 +130,9 @@ export default class GameState {
     targetTile.showAvailableMoves(availableTileToMovePawn);
   }
 
-  private movePiece() {
-    // Implemented Later
+  private movePiece(targetTile: Tile) {
+    if (!targetTile || !this.focusedTileThatHasPiece) return;
+    targetTile.getPieceFromAnotherTile(this.focusedTileThatHasPiece);
   }
 
   static reset(): void {

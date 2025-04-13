@@ -5,9 +5,9 @@ import Piece from "./pieceFactory";
 
 export default class Tile {
   #coordinate: Coordinate;
-  player?: string;
+  player: string | null = null;
   hasPiece = false;
-  pieceData!: Piece;
+  pieceData: Piece | null = null;
   element: Element;
 
   static chessboardElement: Element;
@@ -53,12 +53,7 @@ export default class Tile {
     coordinate: Coordinate,
     tileColor: "black" | "white"
   ): string {
-    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile"><span class="dev-util">${coordinate}</span></div>`;
-  }
-
-  changeStatus(): void {
-    this.hasPiece = !this.hasPiece;
-    // if (!this.hasPiece) this.pieceData = null;
+    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile" data-coordinate="${coordinate}"><span class="dev-util">${coordinate}</span></div>`;
   }
 
   getCoordinate(): Coordinate {
@@ -71,5 +66,30 @@ export default class Tile {
         tile.hasPiece ? "capture-move" : "possible-move"
       );
     });
+  }
+
+  getPieceFromAnotherTile(fromTile: Tile) {
+    const pieceElement = fromTile.element.querySelector(
+      "img[id$='piece']"
+    ) as HTMLElement;
+
+    if (!pieceElement) return;
+
+    pieceElement.dataset.onCoordinate = this.getCoordinate();
+
+    this.hasPiece = true;
+    this.player = fromTile.player;
+    this.element.insertAdjacentElement("beforeend", pieceElement);
+    this.pieceData = fromTile.pieceData;
+    this.element.classList.remove("possible-move");
+
+    this.changeStatusOfSenderTile(fromTile);
+  }
+
+  private changeStatusOfSenderTile(fromTile: Tile): void {
+    fromTile.hasPiece = false;
+    fromTile.player = null;
+    fromTile.pieceData = null;
+    fromTile.element.classList.remove("focused");
   }
 }

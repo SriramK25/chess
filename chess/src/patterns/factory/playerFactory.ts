@@ -23,7 +23,7 @@ export default class Player {
 
     readonlyPlayers.forEach((player) => {
       const playerHasPiecesOnTiles = tiles
-        .filter((tile) => tile.hasPiece && tile.pieceData.belongsTo === player)
+        .filter((tile) => tile.hasPiece && tile.pieceData?.belongsTo === player)
         .map((tile) => tile.getCoordinate());
 
       players.set(player, new Player(player, new Set(playerHasPiecesOnTiles)));

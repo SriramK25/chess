@@ -71,6 +71,6 @@ export default class Piece implements IPiece {
     coordinate: Coordinate
   ): string {
     const chessPiece = svg[`${player}_${pieceType}`];
-    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" data-playable-by="${player}" data-piece="${pieceType}" data-coordinate="${coordinate}" />`;
+    return `<img id="${player}-${pieceType}-piece" src="${chessPiece}" alt="${player}-${pieceType}" data-playable-by="${player}" data-piece="${pieceType}" data-on-coordinate="${coordinate}" />`;
   }
 }
