@@ -15,7 +15,7 @@ export default class Piece implements IPiece {
   hasCaptured: boolean;
   visibility: Set<Coordinate>;
   startTile: Coordinate;
-  hasMoved: false;
+  hasMoved: boolean = false;
   hasPromotion: boolean;
   hasCastling: boolean;
 

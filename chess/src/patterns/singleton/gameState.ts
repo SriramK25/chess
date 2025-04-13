@@ -9,6 +9,7 @@ export default class GameState {
   playerTurn: Player;
   history: Map<Player, Move[]>;
   focusedTileThatHasPiece: Tile | null = null;
+  previousAvailableTilesToMovePiece: Tile[] = [];
 
   private constructor(playerTurn: Player) {
     this.playerTurn = playerTurn;
@@ -48,28 +49,21 @@ export default class GameState {
         return;
       }
 
-      target.parentElement?.classList.add("focused");
-
-      this.focusedTileThatHasPiece?.element.classList.remove("focused");
-
-      this.focusedTileThatHasPiece = tileGraph.getTileByVertex(
+      const targetTile = tileGraph.getTileByVertex(
         target.dataset.onCoordinate as Coordinate
       );
-      this.allowPlayerToMovePiece(target, tileGraph);
+
+      this.allowPlayerToMovePiece(targetTile, tileGraph);
     });
   }
 
-  private allowPlayerToMovePiece(
-    pieceElement: HTMLElement,
-    tileGraph: TileGraph
-  ) {
-    const pieceCoordinate = pieceElement.dataset.onCoordinate as Coordinate;
-
-    if (!pieceCoordinate) return;
-
-    const targetTile = tileGraph.getTileByVertex(pieceCoordinate);
-
+  private allowPlayerToMovePiece(targetTile: Tile, tileGraph: TileGraph) {
     if (!targetTile || !targetTile.hasPiece) return;
+
+    targetTile.addFocus();
+    this.focusedTileThatHasPiece?.removeFocus();
+
+    this.focusedTileThatHasPiece = targetTile;
 
     switch (targetTile.pieceData?.type) {
       case "pawn": {
@@ -112,26 +106,37 @@ export default class GameState {
     );
 
     availableMoves.forEach((move) => {
-      tileCoordinate[0] === move[0] &&
-        availableTileToMovePawn.push(tileGraph.getTileByVertex(move));
+      if (tileCoordinate[0] === move[0]) {
+        const straightTile = tileGraph.getTileByVertex(move);
+        !straightTile.hasPiece && availableTileToMovePawn.push(straightTile);
+      }
 
-      //   !targetTile.pieceData.hasMoved &&
-      //     availableTileToMovePawn.push(
-      //       tileGraph.getTileByVertex(
-      //         `${move[0]}${nextTileRankIndex}` as Coordinate
-      //       )
-      //     );
+      if (tileCoordinate[0] === move[0] && !targetTile.pieceData?.hasMoved) {
+        const secondStraightTile = tileGraph.getTileByVertex(
+          `${move[0]}${Number(nextTileRankIndex) + 1}` as Coordinate
+        );
 
-      // Implement Later
+        !secondStraightTile.hasPiece &&
+          availableTileToMovePawn.push(secondStraightTile);
+      }
+
+      if (tileCoordinate[0] !== move[0]) {
+        const diagonalTile = tileGraph.getTileByVertex(move);
+        diagonalTile.hasPiece &&
+          diagonalTile.player !== player &&
+          availableTileToMovePawn.push(diagonalTile);
+      }
     });
 
     console.log(availableMoves);
-
-    targetTile.showAvailableMoves(availableTileToMovePawn);
+    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
+    this.previousAvailableTilesToMovePiece = availableTileToMovePawn;
+    Tile.showAvailableMoves(availableTileToMovePawn);
   }
 
   private movePiece(targetTile: Tile) {
     if (!targetTile || !this.focusedTileThatHasPiece) return;
+    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
     targetTile.getPieceFromAnotherTile(this.focusedTileThatHasPiece);
   }
 

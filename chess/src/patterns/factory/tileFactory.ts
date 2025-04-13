@@ -60,11 +60,19 @@ export default class Tile {
     return this.#coordinate;
   }
 
-  showAvailableMoves(availableTileToMovePawn: Tile[]) {
-    availableTileToMovePawn.forEach((tile) => {
-      tile.element.classList.add(
-        tile.hasPiece ? "capture-move" : "possible-move"
-      );
+  static showAvailableMoves(availableTilesToMovePiece: Tile[]) {
+    availableTilesToMovePiece.forEach((tile) => {
+      tile.addPossibleMove();
+      tile.hasPiece && tile.addCaptureMove();
+    });
+  }
+
+  static removePreviousAvailableMoves(
+    previousAvailableTilesToMovePiece: Tile[]
+  ) {
+    previousAvailableTilesToMovePiece.forEach((tile) => {
+      tile.removePossibleMove();
+      tile.hasPiece && tile.removeCaptureMove();
     });
   }
 
@@ -81,8 +89,9 @@ export default class Tile {
     this.player = fromTile.player;
     this.element.insertAdjacentElement("beforeend", pieceElement);
     this.pieceData = fromTile.pieceData;
-    this.element.classList.remove("possible-move");
-
+    this.pieceData!.onTile = this.getCoordinate();
+    this.pieceData!.hasMoved = true;
+    this.removePossibleMove();
     this.changeStatusOfSenderTile(fromTile);
   }
 
@@ -90,6 +99,30 @@ export default class Tile {
     fromTile.hasPiece = false;
     fromTile.player = null;
     fromTile.pieceData = null;
-    fromTile.element.classList.remove("focused");
+    fromTile.removeFocus();
+  }
+
+  addFocus(): void {
+    this.element.classList.add("focused");
+  }
+
+  removeFocus(): void {
+    this.element.classList.remove("focused");
+  }
+
+  addPossibleMove(): void {
+    this.element.classList.add("possible-move");
+  }
+
+  removePossibleMove(): void {
+    this.element.classList.remove("possible-move");
+  }
+
+  addCaptureMove(): void {
+    this.element.classList.add("capture-move");
+  }
+
+  removeCaptureMove(): void {
+    this.element.classList.remove("capture-move");
   }
 }
