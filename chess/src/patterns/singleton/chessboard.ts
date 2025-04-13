@@ -2,8 +2,8 @@ import Piece from "../factory/pieceFactory";
 import Player from "../factory/playerFactory";
 import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
-import { Player as PlayerType } from "../../types/unionTypes";
 import GameState from "./gameState";
+import { PlayersData } from "../../types/mapTypes";
 
 export default class Chessboard {
   static #instance: Chessboard | null = null;
@@ -11,7 +11,7 @@ export default class Chessboard {
   #element = document.querySelector("#chess-board");
   #graph: TileGraph = new TileGraph();
   #tiles: Tile[] = [];
-  #players: Map<PlayerType, Player>;
+  #players: PlayersData;
   #game: GameState = GameState.getInstance();
 
   private constructor() {
@@ -30,7 +30,7 @@ export default class Chessboard {
     this.#players = Player.initialisePlayers(this.#tiles);
 
     // Start the Game
-    this.#game.start(this.#element, this.#graph);
+    this.#game.start(this.#element, this.#graph, this.#players);
   }
 
   static getInstance(): Chessboard {

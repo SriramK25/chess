@@ -26,7 +26,11 @@ export default class TileGraph {
     let targetEdgeConnection: Set<Coordinate> =
       this.#edges.get(targetEdge) ?? new Set();
 
-    if (baseEdgeConnection.has(targetEdge)) return false;
+    if (
+      baseEdgeConnection.has(targetEdge) ||
+      targetEdgeConnection.has(baseEdge)
+    )
+      return false;
 
     baseEdgeConnection.add(targetEdge);
     targetEdgeConnection.add(baseEdge);

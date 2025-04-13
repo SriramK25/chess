@@ -13,9 +13,9 @@ export default class Piece implements IPiece {
   onTile: Coordinate;
   type: PieceType;
   hasCaptured: boolean;
-  visibility: Set<Coordinate>;
+  cachedMoves: Tile[];
   startTile: Coordinate;
-  hasMoved: boolean = false;
+  hasMoved: boolean;
   hasPromotion: boolean;
   hasCastling: boolean;
 
@@ -30,7 +30,7 @@ export default class Piece implements IPiece {
     this.onTile = onTile;
     this.type = pieceType;
     this.hasCaptured = false;
-    this.visibility = new Set(["a1"]);
+    this.cachedMoves = [];
     this.startTile = startTile;
     this.hasMoved = false;
     this.hasPromotion = pieceType === "pawn";
