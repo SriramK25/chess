@@ -1,8 +1,8 @@
 import { Coordinate, Move } from "../../types/indexedAccessTypes";
 import { PlayersData } from "../../types/mapTypes";
 import { Player as PlayerType } from "../../types/unionTypes";
-import Player from "../factory/playerFactory";
 import Tile from "../factory/tileFactory";
+import MoveManager from "./moveManager";
 import TileGraph from "./tileGraph";
 
 export default class GameState {
@@ -10,12 +10,14 @@ export default class GameState {
 
   playerTurn: PlayerType;
   history: Map<PlayerType, Move[]>;
-  focusedTileThatHasPiece: Tile | null = null;
+  previouslyFocusedTileWithPiece: Tile | null = null;
   previousAvailableTilesToMovePiece: Tile[] = [];
+  #moveManager: MoveManager;
 
   private constructor(playerTurn: PlayerType) {
     this.playerTurn = playerTurn;
     this.history = new Map();
+    this.#moveManager = MoveManager.getInstance();
   }
 
   static getInstance() {
@@ -37,29 +39,38 @@ export default class GameState {
     players: PlayersData
   ): void {
     chessboardElement.addEventListener("click", (event) => {
-      const target = event.target as HTMLElement;
+      let target = event.target as HTMLElement;
 
       if (
-        target.classList.contains("possible-move") ||
-        target.classList.contains("capture-move")
-      ) {
-        this.movePiece(
-          tileGraph.getTileByVertex(target.dataset.coordinate as Coordinate),
-          players
-        );
-        return;
-      }
-
-      if (
-        !target.dataset.playableBy ||
-        target.dataset.playableBy !== this.playerTurn
-      ) {
-        return;
-      }
+        target.tagName === "IMG" &&
+        target.id.endsWith("piece") &&
+        target.dataset.playableBy
+      )
+        target = target.parentElement!;
 
       const targetTile = tileGraph.getTileByVertex(
-        target.dataset.onCoordinate as Coordinate
+        target.dataset.coordinate as Coordinate
       );
+
+      if (target.classList.contains("capture-move")) {
+        this.#moveManager.capturePiece(
+          targetTile,
+          this.previouslyFocusedTileWithPiece
+        ) && this.switchPlayer(players);
+        return;
+      }
+
+      if (target.classList.contains("possible-move")) {
+        this.#moveManager.movePiece(
+          targetTile,
+          this.previouslyFocusedTileWithPiece
+        ) && this.switchPlayer(players);
+        return;
+      }
+
+      if (targetTile.player !== this.playerTurn) {
+        return;
+      }
 
       this.allowPlayerToMovePiece(targetTile, tileGraph);
     });
@@ -68,264 +79,80 @@ export default class GameState {
   private allowPlayerToMovePiece(targetTile: Tile, tileGraph: TileGraph) {
     if (!targetTile || !targetTile.hasPiece || !targetTile.pieceData) return;
 
+    this.previouslyFocusedTileWithPiece?.removeFocus();
     targetTile.addFocus();
-    this.focusedTileThatHasPiece?.removeFocus();
 
-    this.focusedTileThatHasPiece = targetTile;
+    this.previouslyFocusedTileWithPiece = targetTile;
+
+    let availableTilesToMovePiece: Tile[] = [];
 
     if (targetTile.pieceData.cachedMoves.length) {
-      this.updateAvailableMoves(targetTile.pieceData.cachedMoves);
-      console.log("Took from Cache");
-      return;
-    }
-
-    switch (targetTile.pieceData?.type) {
-      case "pawn": {
-        this.getMovesForPawn(targetTile, targetTile.getCoordinate(), tileGraph);
-        return;
-      }
-      case "king":
-        return;
-      case "queen":
-        return;
-      case "bishop": {
-        this.getMovesForBishop(
-          targetTile,
-          targetTile.getCoordinate(),
-          tileGraph
-        );
-        return;
-      }
-      case "knight": {
-        this.getMovesForKnight(
-          targetTile,
-          targetTile.getCoordinate(),
-          tileGraph
-        );
-        return;
-      }
-      case "rook":
-        return;
-    }
-  }
-
-  private getMovesForPawn(
-    targetTile: Tile,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ];
-
-    const player = targetTile.pieceData?.belongsTo;
-
-    const nextTileRankIndex =
-      player === "white"
-        ? (Number(tileCoordinate[1]) + 1).toString()
-        : (Number(tileCoordinate[1]) - 1).toString();
-
-    const availableTilesToMovePawn: Tile[] = [];
-
-    const availableMoves = neighborTiles.filter(
-      (neighborTile) => neighborTile[1] === nextTileRankIndex
-    );
-
-    availableMoves.forEach((move) => {
-      let straightTile: Tile | null;
-      if (tileCoordinate[0] === move[0]) {
-        straightTile = tileGraph.getTileByVertex(move);
-        !straightTile.hasPiece && availableTilesToMovePawn.push(straightTile);
-      }
-
-      if (
-        tileCoordinate[0] === move[0] &&
-        !targetTile.pieceData?.hasMoved &&
-        !straightTile!.hasPiece
-      ) {
-        const secondStraightTile = tileGraph.getTileByVertex(
-          `${move[0]}${
-            Number(nextTileRankIndex) + (this.playerTurn === "white" ? 1 : -1)
-          }` as Coordinate
-        );
-
-        !secondStraightTile.hasPiece &&
-          availableTilesToMovePawn.push(secondStraightTile);
-      }
-
-      if (tileCoordinate[0] !== move[0]) {
-        const diagonalTile = tileGraph.getTileByVertex(move);
-        diagonalTile.hasPiece &&
-          diagonalTile.player !== player &&
-          availableTilesToMovePawn.push(diagonalTile);
-      }
-    });
-
-    targetTile.pieceData!.cachedMoves = availableTilesToMovePawn;
-
-    this.updateAvailableMoves(availableTilesToMovePawn);
-  }
-
-  private getMovesForKnight(
-    targetTile: Tile,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] === tileCoordinate[0] ||
-        neighborTile[1] === tileCoordinate[1]
-    );
-
-    const neighborTilesAsSet = new Set(neighborTiles);
-
-    const availableTilesToMoveKnight: Tile[] = [];
-
-    neighborTiles.forEach((tile) => {
-      const neighborsOfNeighborTile = [...tileGraph.getNeighbors(tile)].filter(
-        (neighborTile) =>
-          neighborTile[0] !== tile[0] && neighborTile[1] !== tile[1]
-      );
-
-      neighborsOfNeighborTile.forEach((neighborTile) => {
-        const tile = tileGraph.getTileByVertex(neighborTile);
-
-        !neighborTilesAsSet.has(neighborTile) &&
-          tile.player !== this.playerTurn &&
-          availableTilesToMoveKnight.push(tile);
-      });
-    });
-
-    targetTile.pieceData!.cachedMoves = availableTilesToMoveKnight;
-
-    this.updateAvailableMoves(availableTilesToMoveKnight);
-  }
-
-  private getMovesForBishop(
-    targetTile: Tile,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] !== tileCoordinate[0] &&
-        neighborTile[1] !== tileCoordinate[1]
-    );
-
-    const availableTilesToMoveBishop: Tile[] = [];
-
-    neighborTiles.forEach((neighborTileCoordinate) => {
-      const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-      let hasTilePushedWithOpponentPiece = false;
-
-      if (neighborTile.hasPiece) {
-        if (neighborTile.player === this.playerTurn) return;
-
-        hasTilePushedWithOpponentPiece = true;
-      }
-
-      availableTilesToMoveBishop.push(neighborTile);
-
-      const diagonalTileCoordinates = this.getDiagonals(
-        tileCoordinate,
-        neighborTileCoordinate,
-        tileGraph
-      );
-
-      diagonalTileCoordinates.forEach((diagonalTileCoordinate) => {
-        const diagonalTile = tileGraph.getTileByVertex(diagonalTileCoordinate);
-        if (diagonalTile.hasPiece) {
-          if (diagonalTile.player === this.playerTurn) return;
-
-          if (!hasTilePushedWithOpponentPiece) {
-            hasTilePushedWithOpponentPiece = true;
-            availableTilesToMoveBishop.push(diagonalTile);
-          }
-          return;
+      availableTilesToMovePiece = targetTile.pieceData.cachedMoves;
+    } else {
+      switch (targetTile.pieceData?.type) {
+        case "pawn": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForPawn(
+            targetTile,
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
+          break;
         }
-        if (hasTilePushedWithOpponentPiece) return;
 
-        availableTilesToMoveBishop.push(diagonalTile);
-      });
-    });
+        case "king": {
+          break;
+        }
 
-    targetTile.pieceData!.cachedMoves = availableTilesToMoveBishop;
+        case "queen": {
+          break;
+        }
 
-    this.updateAvailableMoves(availableTilesToMoveBishop);
-  }
+        case "bishop": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForBishop(
+            targetTile,
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
+          break;
+        }
 
-  private getDiagonals(
-    previousTileCoordinate: Coordinate,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const diagonalCoordinates = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (diagonalCoordinate) =>
-        diagonalCoordinate[0] !== tileCoordinate[0] &&
-        diagonalCoordinate[1] !== tileCoordinate[1] &&
-        diagonalCoordinate[0] !== previousTileCoordinate[0] &&
-        diagonalCoordinate[1] !== previousTileCoordinate[1]
-    );
+        case "knight": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForKnight(
+            targetTile,
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
+          break;
+        }
 
-    if (diagonalCoordinates.length) {
-      diagonalCoordinates.map((diagonalCoordinate) => {
-        diagonalCoordinates.push(
-          ...this.getDiagonals(tileCoordinate, diagonalCoordinate, tileGraph)
-        );
-      });
+        case "rook": {
+          break;
+        }
+      }
     }
 
-    return diagonalCoordinates;
+    targetTile.pieceData!.cachedMoves = availableTilesToMovePiece;
+    this.updateGameState(availableTilesToMovePiece);
   }
 
-  private getMovesForRook(
-    targetTile: Tile,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] === tileCoordinate[0] ||
-        neighborTile[1] === tileCoordinate[1]
-    );
-  }
+  switchPlayer(players: PlayersData) {
+    if (!this.previouslyFocusedTileWithPiece) return;
 
-  private getStraights(
-    previousTileCoordinate: Coordinate,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    // const straightCoordinates = [...tileGraph.getNeighbors(tileCoordinate)].filter(straightCoordinate => );
-    // Will be Implemented
-  }
-
-  private movePiece(targetTile: Tile, players: PlayersData) {
-    if (!targetTile || !this.focusedTileThatHasPiece) return;
     Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
-    targetTile.getPieceFromAnotherTile(this.focusedTileThatHasPiece);
     players
       .get(this.playerTurn)
       ?.piecesOnBoard.forEach((piece) => (piece.cachedMoves.length = 0));
 
-    this.switchPlayer();
+    this.playerTurn = this.playerTurn === "white" ? "black" : "white";
   }
 
-  updateAvailableMoves(availableTilesToMovePiece: Tile[]) {
+  private updateGameState(availableTilesToMovePiece: Tile[]) {
     Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
     this.previousAvailableTilesToMovePiece = availableTilesToMovePiece;
     Tile.showAvailableMoves(availableTilesToMovePiece);
-  }
-
-  private switchPlayer() {
-    this.playerTurn = this.playerTurn === "white" ? "black" : "white";
   }
 
   static reset(): void {

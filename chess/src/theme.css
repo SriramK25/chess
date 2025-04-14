@@ -1,0 +1,11 @@
+:root {
+  --black-tile-background-color: #2a4e6c;
+  --black-tile-hover-background-color: #3d74a0;
+
+  --white-tile-background-color: #d6dde5;
+  --white-tile-hover-background-color: #75a6de;
+}
+
+#chess-board[data-theme="theme-name"] {
+  /* Theme Specific values */
+}

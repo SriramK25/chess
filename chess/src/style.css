@@ -7,7 +7,6 @@
 
 #chess-board-wrapper {
   border-radius: 0.4rem;
-  outline: 1px dashed violet;
   user-select: none;
 }
 
@@ -36,21 +35,21 @@
 }
 
 .black-tile {
-  background: #2a4e6c;
+  background: var(--black-tile-background-color);
 }
 
 .black-tile:hover,
 .black-tile.focused {
-  background: #3d74a0;
+  background: var(--black-tile-hover-background-color);
 }
 
 .white-tile {
-  background: #d6dde5;
+  background: var(--white-tile-background-color);
 }
 
 .white-tile:hover,
 .white-tile.focused {
-  background: #75a6de;
+  background: var(--white-tile-hover-background-color);
 }
 
 .white-tile.focused img[id$="piece"],

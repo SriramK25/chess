@@ -76,12 +76,16 @@ export default class Tile {
     });
   }
 
-  getPieceFromAnotherTile(fromTile: Tile) {
+  getPieceFromAnotherTile(fromTile: Tile, toTileHasPiece: boolean = false) {
     const pieceElement = fromTile.element.querySelector(
       "img[id$='piece']"
     ) as HTMLElement;
 
     if (!pieceElement) return;
+
+    if (toTileHasPiece) {
+      this.element.querySelector("img[id$='piece']")?.remove();
+    }
 
     pieceElement.dataset.onCoordinate = this.getCoordinate();
 
