@@ -88,8 +88,14 @@ export default class GameState {
         return;
       case "queen":
         return;
-      case "bishop":
+      case "bishop": {
+        this.getMovesForBishop(
+          targetTile,
+          targetTile.getCoordinate(),
+          tileGraph
+        );
         return;
+      }
       case "knight": {
         this.getMovesForKnight(
           targetTile,
@@ -126,12 +132,17 @@ export default class GameState {
     );
 
     availableMoves.forEach((move) => {
+      let straightTile: Tile | null;
       if (tileCoordinate[0] === move[0]) {
-        const straightTile = tileGraph.getTileByVertex(move);
+        straightTile = tileGraph.getTileByVertex(move);
         !straightTile.hasPiece && availableTilesToMovePawn.push(straightTile);
       }
 
-      if (tileCoordinate[0] === move[0] && !targetTile.pieceData?.hasMoved) {
+      if (
+        tileCoordinate[0] === move[0] &&
+        !targetTile.pieceData?.hasMoved &&
+        !straightTile!.hasPiece
+      ) {
         const secondStraightTile = tileGraph.getTileByVertex(
           `${move[0]}${
             Number(nextTileRankIndex) + (this.playerTurn === "white" ? 1 : -1)
@@ -190,6 +201,110 @@ export default class GameState {
     targetTile.pieceData!.cachedMoves = availableTilesToMoveKnight;
 
     this.updateAvailableMoves(availableTilesToMoveKnight);
+  }
+
+  private getMovesForBishop(
+    targetTile: Tile,
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph
+  ) {
+    const neighborTiles: Coordinate[] = [
+      ...tileGraph.getNeighbors(tileCoordinate),
+    ].filter(
+      (neighborTile) =>
+        neighborTile[0] !== tileCoordinate[0] &&
+        neighborTile[1] !== tileCoordinate[1]
+    );
+
+    const availableTilesToMoveBishop: Tile[] = [];
+
+    neighborTiles.forEach((neighborTileCoordinate) => {
+      const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
+      let hasTilePushedWithOpponentPiece = false;
+
+      if (neighborTile.hasPiece) {
+        if (neighborTile.player === this.playerTurn) return;
+
+        hasTilePushedWithOpponentPiece = true;
+      }
+
+      availableTilesToMoveBishop.push(neighborTile);
+
+      const diagonalTileCoordinates = this.getDiagonals(
+        tileCoordinate,
+        neighborTileCoordinate,
+        tileGraph
+      );
+
+      diagonalTileCoordinates.forEach((diagonalTileCoordinate) => {
+        const diagonalTile = tileGraph.getTileByVertex(diagonalTileCoordinate);
+        if (diagonalTile.hasPiece) {
+          if (diagonalTile.player === this.playerTurn) return;
+
+          if (!hasTilePushedWithOpponentPiece) {
+            hasTilePushedWithOpponentPiece = true;
+            availableTilesToMoveBishop.push(diagonalTile);
+          }
+          return;
+        }
+        if (hasTilePushedWithOpponentPiece) return;
+
+        availableTilesToMoveBishop.push(diagonalTile);
+      });
+    });
+
+    targetTile.pieceData!.cachedMoves = availableTilesToMoveBishop;
+
+    this.updateAvailableMoves(availableTilesToMoveBishop);
+  }
+
+  private getDiagonals(
+    previousTileCoordinate: Coordinate,
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph
+  ) {
+    const diagonalCoordinates = [
+      ...tileGraph.getNeighbors(tileCoordinate),
+    ].filter(
+      (diagonalCoordinate) =>
+        diagonalCoordinate[0] !== tileCoordinate[0] &&
+        diagonalCoordinate[1] !== tileCoordinate[1] &&
+        diagonalCoordinate[0] !== previousTileCoordinate[0] &&
+        diagonalCoordinate[1] !== previousTileCoordinate[1]
+    );
+
+    if (diagonalCoordinates.length) {
+      diagonalCoordinates.map((diagonalCoordinate) => {
+        diagonalCoordinates.push(
+          ...this.getDiagonals(tileCoordinate, diagonalCoordinate, tileGraph)
+        );
+      });
+    }
+
+    return diagonalCoordinates;
+  }
+
+  private getMovesForRook(
+    targetTile: Tile,
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph
+  ) {
+    const neighborTiles: Coordinate[] = [
+      ...tileGraph.getNeighbors(tileCoordinate),
+    ].filter(
+      (neighborTile) =>
+        neighborTile[0] === tileCoordinate[0] ||
+        neighborTile[1] === tileCoordinate[1]
+    );
+  }
+
+  private getStraights(
+    previousTileCoordinate: Coordinate,
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph
+  ) {
+    // const straightCoordinates = [...tileGraph.getNeighbors(tileCoordinate)].filter(straightCoordinate => );
+    // Will be Implemented
   }
 
   private movePiece(targetTile: Tile, players: PlayersData) {

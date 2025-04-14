@@ -62,6 +62,10 @@
   height: 100%;
 }
 
+.tile.possible-move {
+  cursor: pointer;
+}
+
 .possible-move::after {
   position: absolute;
   top: 50%;
@@ -73,11 +77,21 @@
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 10px 1px #0000005b;
+  transition: height 0.2s;
+}
+
+.possible-move:hover::after {
+  height: 45%;
+  cursor: pointer;
 }
 
 .capture-move.possible-move::after {
   background: #c51616;
   height: 80%;
+}
+
+.capture-move:hover.possible-move::after {
+  height: 90%;
 }
 
 img[id$="piece"] {
