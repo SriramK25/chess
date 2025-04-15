@@ -8,4 +8,5 @@
 
 #chess-board[data-theme="theme-name"] {
   /* Theme Specific values */
+  user-select: none;
 }

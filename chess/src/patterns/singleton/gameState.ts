@@ -129,10 +129,18 @@ export default class GameState {
         }
 
         case "rook": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForRook(
+            targetTile,
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
           break;
         }
       }
     }
+
+    console.log(availableTilesToMovePiece.map((a) => a.getCoordinate()));
 
     targetTile.pieceData!.cachedMoves = availableTilesToMovePiece;
     this.updateGameState(availableTilesToMovePiece);

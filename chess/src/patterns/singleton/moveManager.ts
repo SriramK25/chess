@@ -1,5 +1,4 @@
 import { Coordinate } from "../../types/indexedAccessTypes";
-import { PlayersData } from "../../types/mapTypes";
 import { Player as PlayerType } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
@@ -196,20 +195,66 @@ export default class MoveManager {
   ) {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] === tileCoordinate[0] ||
-        neighborTile[1] === tileCoordinate[1]
-    );
+    ]
+      .filter(
+        (neighborTile) =>
+          neighborTile[0] === tileCoordinate[0] ||
+          neighborTile[1] === tileCoordinate[1]
+      )
+      .sort();
+
+    console.clear();
+    // console.log(neighborTiles);
+    const availableTilesToMoveRook: Tile[] = [];
+
+    // neighborTiles.forEach((neighborTileCoordinate) => {
+    //   const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
+    //   let hasTilePushedWithPiece = false;
+
+    //   if (neighborTile.hasPiece) {
+    //     if (neighborTile.player === playerTurn) return;
+
+    //     hasTilePushedWithPiece = true;
+    //   }
+
+    //   availableTilesToMoveRook.push(neighborTile);
+    // });
+    const straightCoordinates = this.getStraights(tileCoordinate);
+    let hasTilePushedWithPiece = false;
+
+    straightCoordinates.forEach((straightCoordinate) => {
+      const straightTile = tileGraph.getTileByVertex(straightCoordinate);
+
+      if (straightTile.hasPiece) {
+        hasTilePushedWithPiece = true;
+        if (straightTile.player === playerTurn) return;
+      }
+
+      availableTilesToMoveRook.push(straightTile);
+    });
+
+    return availableTilesToMoveRook;
   }
 
-  getStraights(
-    previousTileCoordinate: Coordinate,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    // const straightCoordinates = [...tileGraph.getNeighbors(tileCoordinate)].filter(straightCoordinate => );
-    // Will be Implemented
+  getStraights(onCoordinate: Coordinate) {
+    const fileIndex = onCoordinate[0];
+    const rankIndex = Number(onCoordinate[1]);
+
+    const straightCoordinates: Coordinate[] = [];
+
+    for (let startRankIndex = 1; startRankIndex <= 8; startRankIndex++) {
+      if (startRankIndex === rankIndex) continue;
+      straightCoordinates.push(`${fileIndex}${startRankIndex}` as Coordinate);
+    }
+
+    for (let startFileIndex = 97; startFileIndex <= 104; startFileIndex++) {
+      if (startFileIndex === fileIndex.charCodeAt(0)) continue;
+      straightCoordinates.push(
+        `${String.fromCodePoint(startFileIndex)}${rankIndex}` as Coordinate
+      );
+    }
+
+    return straightCoordinates;
   }
 
   movePiece(
