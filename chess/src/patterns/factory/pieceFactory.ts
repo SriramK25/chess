@@ -1,5 +1,5 @@
 import IPiece from "../factory/pieceInterface";
-import { Coordinate } from "../../types/indexedAccessTypes";
+import { Coordinate, KingCoordinates } from "../../types/indexedAccessTypes";
 import { Player, PieceType } from "../../types/unionTypes";
 import { pieces } from "../../../data/pieceType";
 import { players } from "../../../data/playerType";
@@ -38,7 +38,9 @@ export default class Piece implements IPiece {
   }
 
   // Setting Pieces on the Board and Updating the Internal States of Tile
-  static spawn(tiles: Tile[]) {
+  static spawn(tiles: Tile[]): KingCoordinates {
+    let kingCoordinates: KingCoordinates = {} as KingCoordinates;
+
     players.forEach((player) => {
       pieces.forEach((piece) => {
         pieceStartTile[player][piece].forEach((startTile) => {
@@ -59,9 +61,14 @@ export default class Piece implements IPiece {
             piece,
             tileCoordinate
           );
+
+          if (piece === "king")
+            kingCoordinates[`${player}King`] = tileCoordinate;
         });
       });
     });
+
+    return kingCoordinates;
   }
 
   // Binds SVG to the <img /> tag and returns that as String

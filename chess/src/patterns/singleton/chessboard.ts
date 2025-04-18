@@ -4,6 +4,7 @@ import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
 import GameState from "./gameState";
 import { PlayersData } from "../../types/mapTypes";
+import { KingCoordinates } from "../../types/indexedAccessTypes";
 
 export default class Chessboard {
   static #instance: Chessboard | null = null;
@@ -12,7 +13,8 @@ export default class Chessboard {
   #graph: TileGraph = new TileGraph();
   #tiles: Tile[] = [];
   #players: PlayersData;
-  #game: GameState = GameState.getInstance();
+  #game: GameState;
+  #kingCoordinates: KingCoordinates;
 
   private constructor() {
     if (!this.#element) throw new Error("Chessboard not found");
@@ -21,7 +23,7 @@ export default class Chessboard {
     Tile.spawn(this.#element, this.#tiles);
 
     // Place Pieces on the Board
-    Piece.spawn(this.#tiles);
+    this.#kingCoordinates = Piece.spawn(this.#tiles);
 
     // Build Graph for Internal purpose
     this.#graph.initialise(this.#tiles);
@@ -29,8 +31,15 @@ export default class Chessboard {
     // Initialise Players
     this.#players = Player.initialisePlayers(this.#tiles);
 
+    this.#game = GameState.getInstance();
+
     // Start the Game
-    this.#game.start(this.#element, this.#graph, this.#players);
+    this.#game.start(
+      this.#element,
+      this.#graph,
+      this.#players,
+      this.#kingCoordinates
+    );
   }
 
   static getInstance(): Chessboard {

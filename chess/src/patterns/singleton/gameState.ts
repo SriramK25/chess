@@ -1,4 +1,8 @@
-import { Coordinate, Move } from "../../types/indexedAccessTypes";
+import {
+  Coordinate,
+  KingCoordinates,
+  Move,
+} from "../../types/indexedAccessTypes";
 import { PlayersData } from "../../types/mapTypes";
 import { Player as PlayerType } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
@@ -13,6 +17,7 @@ export default class GameState {
   previouslyFocusedTileWithPiece: Tile | null = null;
   previousAvailableTilesToMovePiece: Tile[] = [];
   #moveManager: MoveManager;
+  #kingCoordinates!: KingCoordinates;
 
   private constructor(playerTurn: PlayerType) {
     this.playerTurn = playerTurn;
@@ -28,8 +33,10 @@ export default class GameState {
   start(
     chessboardElement: Element,
     tileGraph: TileGraph,
-    players: PlayersData
+    players: PlayersData,
+    kingCoordinates: KingCoordinates
   ) {
+    this.#kingCoordinates = kingCoordinates;
     this.listenToBoard(chessboardElement, tileGraph, players);
   }
 
@@ -121,10 +128,10 @@ export default class GameState {
 
         case "bishop": {
           availableTilesToMovePiece = this.#moveManager.getMovesForBishop(
-            targetTile,
+            // targetTile,
             targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
+            tileGraph
+            // this.playerTurn
           );
           break;
         }
@@ -141,10 +148,10 @@ export default class GameState {
 
         case "rook": {
           availableTilesToMovePiece = this.#moveManager.getMovesForRook(
-            targetTile,
+            // targetTile,
             targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
+            tileGraph
+            // this.playerTurn
           );
           break;
         }

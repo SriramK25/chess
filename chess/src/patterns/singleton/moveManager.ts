@@ -106,10 +106,10 @@ export default class MoveManager {
   }
 
   getMovesForBishop(
-    targetTile: Tile,
+    // targetTile: Tile,
     tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
+    tileGraph: TileGraph
+    // playerTurn: PlayerType
   ): Tile[] {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
@@ -119,19 +119,21 @@ export default class MoveManager {
         neighborTile[1] !== tileCoordinate[1]
     );
 
-    const availableTilesToMoveBishop: Tile[] = [];
+    const availableTilesToMoveBishop: Array<Tile[]> = [];
 
-    neighborTiles.forEach((neighborTileCoordinate) => {
+    neighborTiles.forEach((neighborTileCoordinate, index) => {
       const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-      let hasTilePushedWithPiece = false;
 
-      if (neighborTile.hasPiece) {
-        if (neighborTile.player === playerTurn) return;
+      availableTilesToMoveBishop.push([neighborTile]);
 
-        hasTilePushedWithPiece = true;
-      }
-
-      availableTilesToMoveBishop.push(neighborTile);
+      // if (
+      //   !this.registerMoveAndCanAdvance(
+      //     neighborTile,
+      //     playerTurn,
+      //     availableTilesToMoveBishop
+      //   )
+      // )
+      //   return;
 
       const diagonalTileCoordinates = this.getDiagonals(
         tileCoordinate,
@@ -139,27 +141,23 @@ export default class MoveManager {
         tileGraph
       );
 
-      diagonalTileCoordinates.forEach((diagonalTileCoordinate) => {
+      for (const diagonalTileCoordinate of diagonalTileCoordinates) {
         const diagonalTile = tileGraph.getTileByVertex(diagonalTileCoordinate);
-        if (diagonalTile.hasPiece) {
-          if (diagonalTile.player === playerTurn) {
-            hasTilePushedWithPiece = true;
-            return;
-          }
 
-          if (!hasTilePushedWithPiece) {
-            hasTilePushedWithPiece = true;
-            availableTilesToMoveBishop.push(diagonalTile);
-          }
-          return;
-        }
-        if (hasTilePushedWithPiece) return;
-
-        availableTilesToMoveBishop.push(diagonalTile);
-      });
+        availableTilesToMoveBishop[index].push(diagonalTile);
+        // if (
+        //   !this.registerMoveAndCanAdvance(
+        //     diagonalTile,
+        //     playerTurn,
+        //     availableTilesToMoveBishop
+        //   )
+        // )
+        //   return;
+      }
     });
 
-    return availableTilesToMoveBishop;
+    // return availableTilesToMoveBishop;
+    return [];
   }
 
   getDiagonals(
@@ -189,10 +187,10 @@ export default class MoveManager {
   }
 
   getMovesForRook(
-    targetTile: Tile,
+    // targetTile: Tile,
     tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
+    tileGraph: TileGraph
+    // playerTurn: PlayerType
   ) {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
@@ -202,9 +200,11 @@ export default class MoveManager {
         neighborTile[1] === tileCoordinate[1]
     );
 
-    const availableTilesToMoveRook: Tile[] = [];
+    const availableTilesToMoveRook: Array<Tile[]> = [];
 
-    neighborTiles.forEach((neighborTileCoordinate) => {
+    neighborTiles.forEach((neighborTileCoordinate, index) => {
+      availableTilesToMoveRook.push([]);
+
       const { iterableIndex, bindingIndex, indexName, seed } =
         this.getIterableAndBindingIndex(tileCoordinate, neighborTileCoordinate);
 
@@ -216,18 +216,20 @@ export default class MoveManager {
       )) {
         const tile = tileGraph.getTileByVertex(coordinate as Coordinate);
 
-        if (
-          !this.registerMoveAndCanAdvance(
-            tile,
-            playerTurn,
-            availableTilesToMoveRook
-          )
-        )
-          break;
+        availableTilesToMoveRook[index].push(tile);
+        // if (
+        //   !this.registerMoveAndCanAdvance(
+        //     tile,
+        //     playerTurn,
+        //     availableTilesToMoveRook
+        //   )
+        // )
+        //   break;
       }
     });
 
-    return availableTilesToMoveRook;
+    // return availableTilesToMoveRook;
+    return [];
   }
 
   getIterableAndBindingIndex(
@@ -305,13 +307,9 @@ export default class MoveManager {
     seed: number
   ) {
     const maxIndex =
-      indexName === "file"
-        ? BOARD.END_FILE_INDEX.charCodeAt(0)
-        : BOARD.END_RANK_INDEX;
+      indexName === "file" ? BOARD.END_FILE_INDEX : BOARD.END_RANK_INDEX;
     const minIndex =
-      indexName === "file"
-        ? BOARD.START_FILE_INDEX.charCodeAt(0)
-        : BOARD.START_RANK_INDEX;
+      indexName === "file" ? BOARD.START_FILE_INDEX : BOARD.START_RANK_INDEX;
 
     for (
       iterableIndex;
@@ -352,16 +350,16 @@ export default class MoveManager {
   ) {
     return [
       ...this.getMovesForBishop(
-        {} as Tile,
+        // {} as Tile,
         tileCoordinate,
-        tileGraph,
-        playerTurn
+        tileGraph
+        // playerTurn
       ),
       ...this.getMovesForRook(
-        {} as Tile,
+        // {} as Tile,
         tileCoordinate,
-        tileGraph,
-        playerTurn
+        tileGraph
+        // playerTurn
       ),
     ];
   }
