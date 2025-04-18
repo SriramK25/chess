@@ -88,6 +88,7 @@ export default class GameState {
 
     if (targetTile.pieceData.cachedMoves.length) {
       availableTilesToMovePiece = targetTile.pieceData.cachedMoves;
+      console.log("From Cache");
     } else {
       switch (targetTile.pieceData?.type) {
         case "pawn": {
@@ -101,10 +102,20 @@ export default class GameState {
         }
 
         case "king": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForKing(
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
           break;
         }
 
         case "queen": {
+          availableTilesToMovePiece = this.#moveManager.getMovesForQueen(
+            targetTile.getCoordinate(),
+            tileGraph,
+            this.playerTurn
+          );
           break;
         }
 

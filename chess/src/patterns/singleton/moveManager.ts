@@ -1,3 +1,4 @@
+import { BOARD } from "../../rules/indexRules";
 import { Coordinate } from "../../types/indexedAccessTypes";
 import { Player as PlayerType } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
@@ -195,66 +196,70 @@ export default class MoveManager {
   ) {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
-    ]
-      .filter(
-        (neighborTile) =>
-          neighborTile[0] === tileCoordinate[0] ||
-          neighborTile[1] === tileCoordinate[1]
-      )
-      .sort();
+    ].filter(
+      (neighborTile) =>
+        neighborTile[0] === tileCoordinate[0] ||
+        neighborTile[1] === tileCoordinate[1]
+    );
 
-    console.clear();
-    // console.log(neighborTiles);
     const availableTilesToMoveRook: Tile[] = [];
 
-    // neighborTiles.forEach((neighborTileCoordinate) => {
-    //   const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-    //   let hasTilePushedWithPiece = false;
+    neighborTiles.forEach((neighborTileCoordinate) => {
+      const { iterableIndex, bindingIndex, indexName, seed } =
+        this.getIterableAndBindingIndex(tileCoordinate, neighborTileCoordinate);
 
-    //   if (neighborTile.hasPiece) {
-    //     if (neighborTile.player === playerTurn) return;
+      for (const coordinate of this.generateMove(
+        iterableIndex,
+        bindingIndex,
+        indexName,
+        seed
+      )) {
+        const tile = tileGraph.getTileByVertex(coordinate as Coordinate);
 
-    //     hasTilePushedWithPiece = true;
-    //   }
-
-    //   availableTilesToMoveRook.push(neighborTile);
-    // });
-    const straightCoordinates = this.getStraights(tileCoordinate);
-    let hasTilePushedWithPiece = false;
-
-    straightCoordinates.forEach((straightCoordinate) => {
-      const straightTile = tileGraph.getTileByVertex(straightCoordinate);
-
-      if (straightTile.hasPiece) {
-        hasTilePushedWithPiece = true;
-        if (straightTile.player === playerTurn) return;
+        if (
+          !this.registerMoveAndCanAdvance(
+            tile,
+            playerTurn,
+            availableTilesToMoveRook
+          )
+        )
+          break;
       }
-
-      availableTilesToMoveRook.push(straightTile);
     });
 
     return availableTilesToMoveRook;
   }
 
-  getStraights(onCoordinate: Coordinate) {
-    const fileIndex = onCoordinate[0];
-    const rankIndex = Number(onCoordinate[1]);
-
-    const straightCoordinates: Coordinate[] = [];
-
-    for (let startRankIndex = 1; startRankIndex <= 8; startRankIndex++) {
-      if (startRankIndex === rankIndex) continue;
-      straightCoordinates.push(`${fileIndex}${startRankIndex}` as Coordinate);
+  getIterableAndBindingIndex(
+    onCoordinate: Coordinate,
+    neighborTileCoordinate: Coordinate
+  ): {
+    iterableIndex: number;
+    bindingIndex: string;
+    indexName: "rank" | "file";
+    seed: number;
+  } {
+    if (onCoordinate[0] === neighborTileCoordinate[0]) {
+      return {
+        iterableIndex: +neighborTileCoordinate[1],
+        bindingIndex: neighborTileCoordinate[0],
+        indexName: "rank",
+        seed: +onCoordinate[1] + 1 === +neighborTileCoordinate[1] ? 1 : -1,
+      };
     }
 
-    for (let startFileIndex = 97; startFileIndex <= 104; startFileIndex++) {
-      if (startFileIndex === fileIndex.charCodeAt(0)) continue;
-      straightCoordinates.push(
-        `${String.fromCodePoint(startFileIndex)}${rankIndex}` as Coordinate
-      );
-    }
+    const tileCoordinateCode = neighborTileCoordinate[0].charCodeAt(0);
 
-    return straightCoordinates;
+    return {
+      iterableIndex: tileCoordinateCode,
+      bindingIndex: neighborTileCoordinate[1],
+      indexName: "file",
+      seed:
+        onCoordinate.charCodeAt(0) + 1 ===
+        neighborTileCoordinate[0].charCodeAt(0)
+          ? 1
+          : -1,
+    };
   }
 
   movePiece(
@@ -274,5 +279,90 @@ export default class MoveManager {
 
     targetTile.getPieceFromAnotherTile(previouslyFocusedTileWithPiece, true);
     return true;
+  }
+
+  registerMoveAndCanAdvance(
+    tile: Tile,
+    playerTurn: PlayerType,
+    availableTilesToMovePiece: Tile[]
+  ): boolean {
+    if (tile.hasPiece) {
+      if (tile.player === playerTurn) return false;
+
+      availableTilesToMovePiece.push(tile);
+      return false;
+    }
+
+    availableTilesToMovePiece.push(tile);
+
+    return true;
+  }
+
+  *generateMove(
+    iterableIndex: number,
+    bindingIndex: string,
+    indexName: "file" | "rank",
+    seed: number
+  ) {
+    const maxIndex =
+      indexName === "file"
+        ? BOARD.END_FILE_INDEX.charCodeAt(0)
+        : BOARD.END_RANK_INDEX;
+    const minIndex =
+      indexName === "file"
+        ? BOARD.START_FILE_INDEX.charCodeAt(0)
+        : BOARD.START_RANK_INDEX;
+
+    for (
+      iterableIndex;
+      seed > 0 ? iterableIndex <= maxIndex : iterableIndex >= minIndex;
+      iterableIndex += seed
+    ) {
+      yield indexName === "file"
+        ? `${String.fromCharCode(iterableIndex)}${bindingIndex}`
+        : `${bindingIndex}${iterableIndex}`;
+    }
+  }
+
+  getMovesForKing(
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph,
+    playerTurn: PlayerType
+  ) {
+    const neighborTileCoordinates = [...tileGraph.getNeighbors(tileCoordinate)];
+
+    const availableTilesToMoveKing: Tile[] = [];
+    neighborTileCoordinates.forEach((neighborTileCoordinate) => {
+      const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
+
+      this.registerMoveAndCanAdvance(
+        neighborTile,
+        playerTurn,
+        availableTilesToMoveKing
+      );
+    });
+
+    return availableTilesToMoveKing;
+  }
+
+  getMovesForQueen(
+    tileCoordinate: Coordinate,
+    tileGraph: TileGraph,
+    playerTurn: PlayerType
+  ) {
+    return [
+      ...this.getMovesForBishop(
+        {} as Tile,
+        tileCoordinate,
+        tileGraph,
+        playerTurn
+      ),
+      ...this.getMovesForRook(
+        {} as Tile,
+        tileCoordinate,
+        tileGraph,
+        playerTurn
+      ),
+    ];
   }
 }
