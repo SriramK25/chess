@@ -1,6 +1,6 @@
 import { readonlyCoordinates } from "../../../data/coordinatesData";
 import { Coordinate } from "../../types/indexedAccessTypes";
-import { Player } from "../../types/unionTypes";
+import { PieceType, Player } from "../../types/unionTypes";
 import Piece from "./pieceFactory";
 
 export default class Tile {
@@ -60,20 +60,79 @@ export default class Tile {
     return this.#coordinate;
   }
 
-  static showAvailableMoves(availableTilesToMovePiece: Tile[]) {
-    availableTilesToMovePiece.forEach((tile) => {
-      tile.addPossibleMove();
-      tile.hasPiece && tile.addCaptureMove();
+  static showAvailableMoves(
+    availableSidesToMovePiece: Array<Tile[]>,
+    playerTurn: Player,
+    pieceType: PieceType | null = null
+  ) {
+    if (pieceType === "pawn") {
+      availableSidesToMovePiece = this.filterMovesForPawn(
+        availableSidesToMovePiece
+      );
+    }
+
+    availableSidesToMovePiece.forEach((availableSideToMovePiece) => {
+      for (let tile of availableSideToMovePiece) {
+        if (tile.hasPiece) {
+          tile.player !== playerTurn && tile.addCaptureMove();
+          return;
+        }
+        tile.addPossibleMove();
+      }
+    });
+  }
+
+  static filterMovesForPawn(availableSidesToMovePawn: Array<Tile[]>) {
+    // this.showAvailableMoves(
+    //   [
+    //     availableSidesToMovePawn[0].length &&
+    //     !availableSidesToMovePawn[0][0].hasPiece
+    //       ? availableSidesToMovePawn[0]
+    //       : [],
+    //     availableSidesToMovePawn[1].length &&
+    //     availableSidesToMovePawn[1][0].hasPiece
+    //       ? availableSidesToMovePawn[1]
+    //       : [],
+    //     availableSidesToMovePawn[2].length &&
+    //     availableSidesToMovePawn[2][0].hasPiece
+    //       ? availableSidesToMovePawn[2]
+    //       : [],
+    //   ],
+    //   playerTurn
+    // );
+
+    return availableSidesToMovePawn.map((availableSideToMovePawn, index) => {
+      const emptyTiles: Tile[] = [];
+
+      if (!availableSideToMovePawn.length) return emptyTiles;
+
+      if (!index) {
+        return !availableSideToMovePawn[0].hasPiece
+          ? availableSideToMovePawn
+          : emptyTiles;
+      }
+
+      return availableSideToMovePawn[0].hasPiece
+        ? availableSideToMovePawn
+        : emptyTiles;
     });
   }
 
   static removePreviousAvailableMoves(
-    previousAvailableTilesToMovePiece: Tile[]
+    previousAvailableSidesToMovePiece: Array<Tile[]>,
+    playerTurn: Player
   ) {
-    previousAvailableTilesToMovePiece.forEach((tile) => {
-      tile.removePossibleMove();
-      tile.hasPiece && tile.removeCaptureMove();
-    });
+    previousAvailableSidesToMovePiece.forEach(
+      (previousAvailableSideToMovePiece) => {
+        for (let tile of previousAvailableSideToMovePiece) {
+          if (tile.hasPiece) {
+            tile.player !== playerTurn && tile.removeCaptureMove();
+            continue;
+          }
+          tile.removePossibleMove();
+        }
+      }
+    );
   }
 
   getPieceFromAnotherTile(fromTile: Tile, toTileHasPiece: boolean = false) {
@@ -123,10 +182,10 @@ export default class Tile {
   }
 
   addCaptureMove(): void {
-    this.element.classList.add("capture-move");
+    this.element.classList.add("possible-move", "capture-move");
   }
 
   removeCaptureMove(): void {
-    this.element.classList.remove("capture-move");
+    this.element.classList.remove("possible-move", "capture-move");
   }
 }

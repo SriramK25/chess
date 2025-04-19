@@ -4,7 +4,7 @@ import {
   Move,
 } from "../../types/indexedAccessTypes";
 import { PlayersData } from "../../types/mapTypes";
-import { Player as PlayerType } from "../../types/unionTypes";
+import { PieceType, Player as PlayerType } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
 import MoveManager from "./moveManager";
 import TileGraph from "./tileGraph";
@@ -15,9 +15,10 @@ export default class GameState {
   playerTurn: PlayerType;
   history: Map<PlayerType, Move[]>;
   previouslyFocusedTileWithPiece: Tile | null = null;
-  previousAvailableTilesToMovePiece: Tile[] = [];
+  previousAvailableTilesToMovePiece: Array<Tile[]> = [];
   #moveManager: MoveManager;
   #kingCoordinates!: KingCoordinates;
+  #focusedPiece: PieceType | null = null;
 
   private constructor(playerTurn: PlayerType) {
     this.playerTurn = playerTurn;
@@ -91,10 +92,11 @@ export default class GameState {
 
     this.previouslyFocusedTileWithPiece = targetTile;
 
-    let availableTilesToMovePiece: Tile[] = [];
+    let availableTilesToMovePiece: Array<Tile[]> = [];
 
     if (targetTile.pieceData.cachedMoves.length) {
       availableTilesToMovePiece = targetTile.pieceData.cachedMoves;
+      this.#focusedPiece = targetTile.pieceData.type;
       console.log("From Cache");
     } else {
       switch (targetTile.pieceData?.type) {
@@ -105,15 +107,16 @@ export default class GameState {
             tileGraph,
             this.playerTurn
           );
+          this.#focusedPiece = "pawn";
           break;
         }
 
         case "king": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForKing(
-            targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
-          );
+          // availableTilesToMovePiece = this.#moveManager.getMovesForKing(
+          //   targetTile.getCoordinate(),
+          //   tileGraph,
+          //   this.playerTurn
+          // );
           break;
         }
 
@@ -158,7 +161,9 @@ export default class GameState {
       }
     }
 
-    console.log(availableTilesToMovePiece.map((a) => a.getCoordinate()));
+    console.log(
+      availableTilesToMovePiece.map((a) => a.map((a1) => a1.getCoordinate()))
+    );
 
     targetTile.pieceData!.cachedMoves = availableTilesToMovePiece;
     this.updateGameState(availableTilesToMovePiece);
@@ -167,7 +172,10 @@ export default class GameState {
   switchPlayer(players: PlayersData) {
     if (!this.previouslyFocusedTileWithPiece) return;
 
-    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
+    Tile.removePreviousAvailableMoves(
+      this.previousAvailableTilesToMovePiece,
+      this.playerTurn
+    );
     players
       .get(this.playerTurn)
       ?.piecesOnBoard.forEach((piece) => (piece.cachedMoves.length = 0));
@@ -175,10 +183,19 @@ export default class GameState {
     this.playerTurn = this.playerTurn === "white" ? "black" : "white";
   }
 
-  private updateGameState(availableTilesToMovePiece: Tile[]) {
-    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
+  private updateGameState(availableTilesToMovePiece: Array<Tile[]>) {
+    Tile.removePreviousAvailableMoves(
+      this.previousAvailableTilesToMovePiece,
+      this.playerTurn
+    );
     this.previousAvailableTilesToMovePiece = availableTilesToMovePiece;
-    Tile.showAvailableMoves(availableTilesToMovePiece);
+    Tile.showAvailableMoves(
+      availableTilesToMovePiece,
+      this.playerTurn,
+      this.#focusedPiece
+    );
+
+    this.#focusedPiece = null;
   }
 
   static reset(): void {

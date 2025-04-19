@@ -20,7 +20,7 @@ export default class MoveManager {
     tileCoordinate: Coordinate,
     tileGraph: TileGraph,
     playerTurn: PlayerType
-  ): Tile[] {
+  ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
     ];
@@ -30,39 +30,36 @@ export default class MoveManager {
         ? (Number(tileCoordinate[1]) + 1).toString()
         : (Number(tileCoordinate[1]) - 1).toString();
 
-    const availableTilesToMovePawn: Tile[] = [];
+    const availableTilesToMovePawn: Array<Tile[]> = [[], [], []];
 
     const availableMoves = neighborTiles.filter(
       (neighborTile) => neighborTile[1] === nextTileRankIndex
     );
 
-    availableMoves.forEach((move) => {
-      let straightTile: Tile | null;
+    availableMoves.forEach((move, index) => {
       if (tileCoordinate[0] === move[0]) {
-        straightTile = tileGraph.getTileByVertex(move);
-        !straightTile.hasPiece && availableTilesToMovePawn.push(straightTile);
+        const straightTile = tileGraph.getTileByVertex(move);
+        straightTile && availableTilesToMovePawn[0].push(straightTile);
       }
 
-      if (
-        tileCoordinate[0] === move[0] &&
-        !targetTile.pieceData?.hasMoved &&
-        !straightTile!.hasPiece
-      ) {
+      if (tileCoordinate[0] === move[0] && !targetTile.pieceData?.hasMoved) {
+        const secondStraightRankIndex =
+          Number(nextTileRankIndex) + (playerTurn === "white" ? 1 : -1);
+
         const secondStraightTile = tileGraph.getTileByVertex(
-          `${move[0]}${
-            Number(nextTileRankIndex) + (playerTurn === "white" ? 1 : -1)
-          }` as Coordinate
+          `${move[0]}${secondStraightRankIndex}` as Coordinate
         );
 
-        !secondStraightTile.hasPiece &&
-          availableTilesToMovePawn.push(secondStraightTile);
+        secondStraightTile &&
+          availableTilesToMovePawn[0].push(secondStraightTile);
       }
 
       if (tileCoordinate[0] !== move[0]) {
         const diagonalTile = tileGraph.getTileByVertex(move);
-        diagonalTile.hasPiece &&
-          diagonalTile.player !== playerTurn &&
-          availableTilesToMovePawn.push(diagonalTile);
+        diagonalTile &&
+          availableTilesToMovePawn[!index ? index + 1 : index].push(
+            diagonalTile
+          );
       }
     });
 
@@ -74,7 +71,7 @@ export default class MoveManager {
     tileCoordinate: Coordinate,
     tileGraph: TileGraph,
     playerTurn: PlayerType
-  ): Tile[] {
+  ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
     ].filter(
@@ -85,7 +82,7 @@ export default class MoveManager {
 
     const neighborTilesAsSet = new Set(neighborTiles);
 
-    const availableTilesToMoveKnight: Tile[] = [];
+    const availableTilesToMoveKnight: Array<Tile[]> = [];
 
     neighborTiles.forEach((tile) => {
       const neighborsOfNeighborTile = [...tileGraph.getNeighbors(tile)].filter(
@@ -93,12 +90,14 @@ export default class MoveManager {
           neighborTile[0] !== tile[0] && neighborTile[1] !== tile[1]
       );
 
-      neighborsOfNeighborTile.forEach((neighborTile) => {
+      availableTilesToMoveKnight.push([]);
+
+      neighborsOfNeighborTile.forEach((neighborTile, index) => {
         const tile = tileGraph.getTileByVertex(neighborTile);
 
         !neighborTilesAsSet.has(neighborTile) &&
           tile.player !== playerTurn &&
-          availableTilesToMoveKnight.push(tile);
+          availableTilesToMoveKnight[index].push(tile);
       });
     });
 
@@ -110,7 +109,7 @@ export default class MoveManager {
     tileCoordinate: Coordinate,
     tileGraph: TileGraph
     // playerTurn: PlayerType
-  ): Tile[] {
+  ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
     ].filter(
@@ -156,8 +155,7 @@ export default class MoveManager {
       }
     });
 
-    // return availableTilesToMoveBishop;
-    return [];
+    return availableTilesToMoveBishop;
   }
 
   getDiagonals(
@@ -191,7 +189,7 @@ export default class MoveManager {
     tileCoordinate: Coordinate,
     tileGraph: TileGraph
     // playerTurn: PlayerType
-  ) {
+  ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
     ].filter(
@@ -228,8 +226,7 @@ export default class MoveManager {
       }
     });
 
-    // return availableTilesToMoveRook;
-    return [];
+    return availableTilesToMoveRook;
   }
 
   getIterableAndBindingIndex(

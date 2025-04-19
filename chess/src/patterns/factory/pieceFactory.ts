@@ -13,7 +13,7 @@ export default class Piece implements IPiece {
   onTile: Coordinate;
   type: PieceType;
   hasCaptured: boolean;
-  cachedMoves: Tile[];
+  cachedMoves: Array<Tile[]>;
   startTile: Coordinate;
   hasMoved: boolean;
   hasPromotion: boolean;
