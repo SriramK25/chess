@@ -19,16 +19,14 @@ export default class Tile {
 
   static spawn(chessboardElement: Element, tiles: Tile[]): void {
     this.chessboardElement = chessboardElement;
+    const tilesFragment = document.createDocumentFragment();
 
     readonlyCoordinates.forEach((coordinate) => {
       let tileColor: "white" | "black" = this.getTileColor(coordinate);
 
-      chessboardElement.insertAdjacentHTML(
-        "beforeend",
-        this.generateTileHTML(coordinate, tileColor)
-      );
+      tilesFragment.append(this.generateTileHTML(coordinate, tileColor));
 
-      const tileElement: Element | null = chessboardElement.querySelector(
+      const tileElement: Element | null = tilesFragment.querySelector(
         `#tile-${coordinate}`
       );
 
@@ -37,6 +35,8 @@ export default class Tile {
 
       tiles.push(new Tile(coordinate, tileElement));
     });
+
+    chessboardElement.append(tilesFragment);
   }
 
   private static getTileColor(coordinate: string): Player {
@@ -52,8 +52,15 @@ export default class Tile {
   private static generateTileHTML(
     coordinate: Coordinate,
     tileColor: "black" | "white"
-  ): string {
-    return `<div id="tile-${coordinate}" class="tile ${tileColor}-tile" data-coordinate="${coordinate}"><span class="dev-util">${coordinate}</span></div>`;
+  ): HTMLElement {
+    const divElement = document.createElement("div");
+
+    divElement.id = `tile-${coordinate}`;
+    divElement.classList.add("tile", `${tileColor}-tile`);
+    divElement.dataset.coordinate = coordinate;
+    divElement.innerHTML = `<span class="dev-util">${coordinate}</span>`;
+
+    return divElement;
   }
 
   getCoordinate(): Coordinate {
