@@ -50,9 +50,10 @@ export default class GameState {
       let target = event.target as HTMLElement;
 
       if (
-        target.tagName === "IMG" &&
-        target.id.endsWith("piece") &&
-        target.dataset.playableBy
+        (target.tagName === "IMG" &&
+          target.id.endsWith("piece") &&
+          target.dataset.playableBy) ||
+        target.tagName === "SPAN"
       )
         target = target.parentElement!;
 
@@ -102,46 +103,39 @@ export default class GameState {
       switch (targetTile.pieceData?.type) {
         case "pawn": {
           availableTilesToMovePiece = this.#moveManager.getMovesForPawn(
-            targetTile,
             targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
+            tileGraph
           );
           this.#focusedPiece = "pawn";
           break;
         }
 
         case "king": {
-          // availableTilesToMovePiece = this.#moveManager.getMovesForKing(
-          //   targetTile.getCoordinate(),
-          //   tileGraph,
-          //   this.playerTurn
-          // );
+          availableTilesToMovePiece = this.#moveManager.getMovesForKing(
+            targetTile.getCoordinate(),
+            tileGraph
+          );
           break;
         }
 
         case "queen": {
           availableTilesToMovePiece = this.#moveManager.getMovesForQueen(
             targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
+            tileGraph
           );
           break;
         }
 
         case "bishop": {
           availableTilesToMovePiece = this.#moveManager.getMovesForBishop(
-            // targetTile,
             targetTile.getCoordinate(),
             tileGraph
-            // this.playerTurn
           );
           break;
         }
 
         case "knight": {
           availableTilesToMovePiece = this.#moveManager.getMovesForKnight(
-            targetTile,
             targetTile.getCoordinate(),
             tileGraph,
             this.playerTurn
@@ -151,19 +145,13 @@ export default class GameState {
 
         case "rook": {
           availableTilesToMovePiece = this.#moveManager.getMovesForRook(
-            // targetTile,
             targetTile.getCoordinate(),
             tileGraph
-            // this.playerTurn
           );
           break;
         }
       }
     }
-
-    console.log(
-      availableTilesToMovePiece.map((a) => a.map((a1) => a1.getCoordinate()))
-    );
 
     targetTile.pieceData!.cachedMoves = availableTilesToMovePiece;
     this.updateGameState(availableTilesToMovePiece);

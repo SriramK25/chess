@@ -16,17 +16,17 @@ export default class MoveManager {
   }
 
   getMovesForPawn(
-    targetTile: Tile,
     tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
+    tileGraph: TileGraph
   ): Array<Tile[]> {
+    const targetTile = tileGraph.getTileByVertex(tileCoordinate);
+
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
     ];
 
     const nextTileRankIndex =
-      playerTurn === "white"
+      targetTile.player === "white"
         ? (Number(tileCoordinate[1]) + 1).toString()
         : (Number(tileCoordinate[1]) - 1).toString();
 
@@ -44,7 +44,7 @@ export default class MoveManager {
 
       if (tileCoordinate[0] === move[0] && !targetTile.pieceData?.hasMoved) {
         const secondStraightRankIndex =
-          Number(nextTileRankIndex) + (playerTurn === "white" ? 1 : -1);
+          Number(nextTileRankIndex) + (targetTile.player === "white" ? 1 : -1);
 
         const secondStraightTile = tileGraph.getTileByVertex(
           `${move[0]}${secondStraightRankIndex}` as Coordinate
@@ -67,7 +67,6 @@ export default class MoveManager {
   }
 
   getMovesForKnight(
-    targetTile: Tile,
     tileCoordinate: Coordinate,
     tileGraph: TileGraph,
     playerTurn: PlayerType
@@ -84,7 +83,7 @@ export default class MoveManager {
 
     const availableTilesToMoveKnight: Array<Tile[]> = [];
 
-    neighborTiles.forEach((tile) => {
+    neighborTiles.forEach((tile, index) => {
       const neighborsOfNeighborTile = [...tileGraph.getNeighbors(tile)].filter(
         (neighborTile) =>
           neighborTile[0] !== tile[0] && neighborTile[1] !== tile[1]
@@ -92,7 +91,7 @@ export default class MoveManager {
 
       availableTilesToMoveKnight.push([]);
 
-      neighborsOfNeighborTile.forEach((neighborTile, index) => {
+      neighborsOfNeighborTile.forEach((neighborTile) => {
         const tile = tileGraph.getTileByVertex(neighborTile);
 
         !neighborTilesAsSet.has(neighborTile) &&
@@ -105,10 +104,8 @@ export default class MoveManager {
   }
 
   getMovesForBishop(
-    // targetTile: Tile,
     tileCoordinate: Coordinate,
     tileGraph: TileGraph
-    // playerTurn: PlayerType
   ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
@@ -125,15 +122,6 @@ export default class MoveManager {
 
       availableTilesToMoveBishop.push([neighborTile]);
 
-      // if (
-      //   !this.registerMoveAndCanAdvance(
-      //     neighborTile,
-      //     playerTurn,
-      //     availableTilesToMoveBishop
-      //   )
-      // )
-      //   return;
-
       const diagonalTileCoordinates = this.getDiagonals(
         tileCoordinate,
         neighborTileCoordinate,
@@ -144,14 +132,6 @@ export default class MoveManager {
         const diagonalTile = tileGraph.getTileByVertex(diagonalTileCoordinate);
 
         availableTilesToMoveBishop[index].push(diagonalTile);
-        // if (
-        //   !this.registerMoveAndCanAdvance(
-        //     diagonalTile,
-        //     playerTurn,
-        //     availableTilesToMoveBishop
-        //   )
-        // )
-        //   return;
       }
     });
 
@@ -185,10 +165,8 @@ export default class MoveManager {
   }
 
   getMovesForRook(
-    // targetTile: Tile,
     tileCoordinate: Coordinate,
     tileGraph: TileGraph
-    // playerTurn: PlayerType
   ): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [
       ...tileGraph.getNeighbors(tileCoordinate),
@@ -215,14 +193,6 @@ export default class MoveManager {
         const tile = tileGraph.getTileByVertex(coordinate as Coordinate);
 
         availableTilesToMoveRook[index].push(tile);
-        // if (
-        //   !this.registerMoveAndCanAdvance(
-        //     tile,
-        //     playerTurn,
-        //     availableTilesToMoveRook
-        //   )
-        // )
-        //   break;
       }
     });
 
@@ -319,45 +289,22 @@ export default class MoveManager {
     }
   }
 
-  getMovesForKing(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
-  ) {
+  getMovesForKing(tileCoordinate: Coordinate, tileGraph: TileGraph) {
     const neighborTileCoordinates = [...tileGraph.getNeighbors(tileCoordinate)];
 
-    const availableTilesToMoveKing: Tile[] = [];
+    const availableTilesToMoveKing: Array<Tile[]> = [];
     neighborTileCoordinates.forEach((neighborTileCoordinate) => {
       const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-
-      this.registerMoveAndCanAdvance(
-        neighborTile,
-        playerTurn,
-        availableTilesToMoveKing
-      );
+      availableTilesToMoveKing.push([neighborTile]);
     });
 
     return availableTilesToMoveKing;
   }
 
-  getMovesForQueen(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
-  ) {
+  getMovesForQueen(tileCoordinate: Coordinate, tileGraph: TileGraph) {
     return [
-      ...this.getMovesForBishop(
-        // {} as Tile,
-        tileCoordinate,
-        tileGraph
-        // playerTurn
-      ),
-      ...this.getMovesForRook(
-        // {} as Tile,
-        tileCoordinate,
-        tileGraph
-        // playerTurn
-      ),
+      ...this.getMovesForBishop(tileCoordinate, tileGraph),
+      ...this.getMovesForRook(tileCoordinate, tileGraph),
     ];
   }
 }

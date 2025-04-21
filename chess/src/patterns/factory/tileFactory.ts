@@ -83,27 +83,9 @@ export default class Tile {
   }
 
   static filterMovesForPawn(availableSidesToMovePawn: Array<Tile[]>) {
-    // this.showAvailableMoves(
-    //   [
-    //     availableSidesToMovePawn[0].length &&
-    //     !availableSidesToMovePawn[0][0].hasPiece
-    //       ? availableSidesToMovePawn[0]
-    //       : [],
-    //     availableSidesToMovePawn[1].length &&
-    //     availableSidesToMovePawn[1][0].hasPiece
-    //       ? availableSidesToMovePawn[1]
-    //       : [],
-    //     availableSidesToMovePawn[2].length &&
-    //     availableSidesToMovePawn[2][0].hasPiece
-    //       ? availableSidesToMovePawn[2]
-    //       : [],
-    //   ],
-    //   playerTurn
-    // );
+    const emptyTiles: Tile[] = [];
 
     return availableSidesToMovePawn.map((availableSideToMovePawn, index) => {
-      const emptyTiles: Tile[] = [];
-
       if (!availableSideToMovePawn.length) return emptyTiles;
 
       if (!index) {
@@ -126,7 +108,7 @@ export default class Tile {
       (previousAvailableSideToMovePiece) => {
         for (let tile of previousAvailableSideToMovePiece) {
           if (tile.hasPiece) {
-            tile.player !== playerTurn && tile.removeCaptureMove();
+            tile.removeCaptureMove();
             continue;
           }
           tile.removePossibleMove();
@@ -154,7 +136,6 @@ export default class Tile {
     this.pieceData = fromTile.pieceData;
     this.pieceData!.onTile = this.getCoordinate();
     this.pieceData!.hasMoved = true;
-    this.removePossibleMove();
     this.changeStatusOfSenderTile(fromTile);
   }
 
