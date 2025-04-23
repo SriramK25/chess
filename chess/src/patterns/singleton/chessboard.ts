@@ -19,19 +19,20 @@ export default class Chessboard {
   private constructor() {
     if (!this.#element) throw new Error("Chessboard not found");
 
+    // Create Game States and Everything for Internal Purpose
+    this.#game = GameState.getInstance();
+
     // Build Tiles
     Tile.spawn(this.#element, this.#tiles);
-
-    // Place Pieces on the Board
-    this.#kingCoordinates = Piece.spawn(this.#tiles);
 
     // Build Graph for Internal purpose
     this.#graph.initialise(this.#tiles);
 
+    // Place Pieces on the Board
+    this.#kingCoordinates = Piece.spawn(this.#tiles, this.#game, this.#graph);
+
     // Initialise Players
     this.#players = Player.initialisePlayers(this.#tiles);
-
-    this.#game = GameState.getInstance();
 
     // Start the Game
     this.#game.start(

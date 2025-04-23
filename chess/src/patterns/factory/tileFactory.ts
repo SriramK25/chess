@@ -96,9 +96,13 @@ export default class Tile {
       if (!availableSideToMovePawn.length) return emptyTiles;
 
       if (!index) {
-        return !availableSideToMovePawn[0].hasPiece
-          ? availableSideToMovePawn
-          : emptyTiles;
+        const filteredStraightTile: Tile[] = [];
+        for (let availableTile of availableSideToMovePawn) {
+          if (availableTile.hasPiece) break;
+          filteredStraightTile.push(availableTile);
+        }
+
+        return filteredStraightTile;
       }
 
       return availableSideToMovePawn[0].hasPiece

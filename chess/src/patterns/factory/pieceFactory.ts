@@ -6,6 +6,8 @@ import { players } from "../../../data/playerType";
 import { pieceStartTile } from "../../../data/pieceStartTileData";
 import Tile from "./tileFactory";
 import svg from "../../utils/defaultPieceSVGImporter";
+import TileGraph from "../singleton/tileGraph";
+import GameState from "../singleton/gameState";
 
 export default class Piece implements IPiece {
   id: string;
@@ -14,6 +16,7 @@ export default class Piece implements IPiece {
   type: PieceType;
   hasCaptured: boolean;
   cachedMoves: Array<Tile[]>;
+  nextLatentMove: Array<Tile[]>;
   startTile: Coordinate;
   hasMoved: boolean;
   hasPromotion: boolean;
@@ -21,16 +24,17 @@ export default class Piece implements IPiece {
 
   private constructor(
     belongsTo: Player,
-    onTile: Coordinate,
     pieceType: PieceType,
-    startTile: Coordinate
+    startTile: Coordinate,
+    nextLatentMoves: Array<Tile[]>
   ) {
     this.id = crypto.randomUUID();
     this.belongsTo = belongsTo;
-    this.onTile = onTile;
+    this.onTile = startTile;
     this.type = pieceType;
     this.hasCaptured = false;
     this.cachedMoves = [];
+    this.nextLatentMove = nextLatentMoves;
     this.startTile = startTile;
     this.hasMoved = false;
     this.hasPromotion = pieceType === "pawn";
@@ -38,7 +42,11 @@ export default class Piece implements IPiece {
   }
 
   // Setting Pieces on the Board and Updating the Internal States of Tile
-  static spawn(tiles: Tile[]): KingCoordinates {
+  static spawn(
+    tiles: Tile[],
+    gameState: GameState,
+    tileGraph: TileGraph
+  ): KingCoordinates {
     let kingCoordinates: KingCoordinates = {} as KingCoordinates;
 
     players.forEach((player) => {
@@ -55,11 +63,18 @@ export default class Piece implements IPiece {
             "beforeend",
             this.generatePiece(player, piece, tileCoordinate)
           );
+
+          const nextLatentMove = gameState.getMovesForPiece(
+            piece,
+            tileCoordinate,
+            tileGraph
+          );
+
           tile.pieceData = new Piece(
             player,
-            tileCoordinate,
             piece,
-            tileCoordinate
+            tileCoordinate,
+            nextLatentMove
           );
 
           if (piece === "king")

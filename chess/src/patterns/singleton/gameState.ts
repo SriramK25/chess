@@ -74,6 +74,9 @@ export default class GameState {
           targetTile,
           this.previouslyFocusedTileWithPiece
         ) && this.switchPlayer(players);
+
+        targetTile.pieceData!.nextLatentMove = this.getMovesForPiece(ta);
+
         return;
       }
 
@@ -81,11 +84,11 @@ export default class GameState {
         return;
       }
 
-      this.allowPlayerToMovePiece(targetTile, tileGraph);
+      this.allowPlayerToMovePiece(targetTile);
     });
   }
 
-  private allowPlayerToMovePiece(targetTile: Tile, tileGraph: TileGraph) {
+  private allowPlayerToMovePiece(targetTile: Tile) {
     if (!targetTile || !targetTile.hasPiece || !targetTile.pieceData) return;
 
     this.previouslyFocusedTileWithPiece?.removeFocus();
@@ -95,66 +98,76 @@ export default class GameState {
 
     let availableTilesToMovePiece: Array<Tile[]> = [];
 
-    if (targetTile.pieceData.cachedMoves.length) {
-      availableTilesToMovePiece = targetTile.pieceData.cachedMoves;
+    if (targetTile.pieceData.nextLatentMove.length) {
+      availableTilesToMovePiece = targetTile.pieceData.nextLatentMove;
       this.#focusedPiece = targetTile.pieceData.type;
-      console.log("From Cache");
+      console.log("From Latent Move");
     } else {
-      switch (targetTile.pieceData?.type) {
-        case "pawn": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForPawn(
-            targetTile.getCoordinate(),
-            tileGraph
-          );
-          this.#focusedPiece = "pawn";
-          break;
-        }
+    }
 
-        case "king": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForKing(
-            targetTile.getCoordinate(),
-            tileGraph
-          );
-          break;
-        }
+    this.updateGameState(availableTilesToMovePiece);
+  }
 
-        case "queen": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForQueen(
-            targetTile.getCoordinate(),
-            tileGraph
-          );
-          break;
-        }
+  getMovesForPiece(
+    pieceType: PieceType,
+    coordinate: Coordinate,
+    tileGraph: TileGraph
+  ): Array<Tile[]> {
+    let availableTilesToMovePiece: Array<Tile[]> = [];
 
-        case "bishop": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForBishop(
-            targetTile.getCoordinate(),
-            tileGraph
-          );
-          break;
-        }
+    switch (pieceType) {
+      case "pawn": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForPawn(
+          coordinate,
+          tileGraph
+        );
+        this.#focusedPiece = "pawn";
+        break;
+      }
 
-        case "knight": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForKnight(
-            targetTile.getCoordinate(),
-            tileGraph,
-            this.playerTurn
-          );
-          break;
-        }
+      case "king": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForKing(
+          coordinate,
+          tileGraph
+        );
+        break;
+      }
 
-        case "rook": {
-          availableTilesToMovePiece = this.#moveManager.getMovesForRook(
-            targetTile.getCoordinate(),
-            tileGraph
-          );
-          break;
-        }
+      case "queen": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForQueen(
+          coordinate,
+          tileGraph
+        );
+        break;
+      }
+
+      case "bishop": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForBishop(
+          coordinate,
+          tileGraph
+        );
+        break;
+      }
+
+      case "knight": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForKnight(
+          coordinate,
+          tileGraph,
+          this.playerTurn
+        );
+        break;
+      }
+
+      case "rook": {
+        availableTilesToMovePiece = this.#moveManager.getMovesForRook(
+          coordinate,
+          tileGraph
+        );
+        break;
       }
     }
 
-    targetTile.pieceData!.cachedMoves = availableTilesToMovePiece;
-    this.updateGameState(availableTilesToMovePiece);
+    return availableTilesToMovePiece;
   }
 
   switchPlayer(players: PlayersData) {
