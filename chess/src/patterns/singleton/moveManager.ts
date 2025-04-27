@@ -1,6 +1,7 @@
 import { BOARD } from "../../rules/indexRules";
-import { Coordinate } from "../../types/indexedAccessTypes";
+import { Coordinate, KingCoordinates } from "../../types/indexedAccessTypes";
 import { Player as PlayerType } from "../../types/unionTypes";
+import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
 
@@ -306,5 +307,71 @@ export default class MoveManager {
       ...this.getMovesForBishop(tileCoordinate, tileGraph),
       ...this.getMovesForRook(tileCoordinate, tileGraph),
     ];
+  }
+
+  latentCheck(
+    targetPiece: Piece,
+    kingCoordinates: KingCoordinates,
+    playerTurn: PlayerType
+  ) {
+    const potentialBlockerTiles: Tile[] = [];
+
+    for (let latentMoveTiles of targetPiece.nextLatentMove) {
+      let latentMoveTileIndex = latentMoveTiles.length - 1;
+      let hasFoundKing = false;
+
+      for (
+        latentMoveTileIndex;
+        latentMoveTileIndex >= 0;
+        latentMoveTileIndex--
+      ) {
+        if (
+          latentMoveTiles[latentMoveTileIndex].getCoordinate() ===
+          kingCoordinates[`${playerTurn === "white" ? "black" : "white"}King`]
+        ) {
+          hasFoundKing = true;
+          continue;
+        }
+
+        if (!hasFoundKing) continue;
+
+        let tile = latentMoveTiles[latentMoveTileIndex];
+
+        tile.piecesTargetingKingViaThisTile.push(targetPiece);
+
+        if (tile.hasPiece) {
+          tile.pieceData?.blocking.push(targetPiece);
+          tile.pieceData!.isProtectingKingFromOpponentLatentMove =
+            tile.pieceData?.belongsTo !== playerTurn ? true : false;
+          potentialBlockerTiles.push(tile);
+        }
+      }
+    }
+
+    if (potentialBlockerTiles.length > 1) {
+      potentialBlockerTiles.forEach((blockerTile) => {
+        blockerTile.pieceData!.isProtectingKingFromOpponentLatentMove = false;
+      });
+    }
+
+    targetPiece.blockerPieces = potentialBlockerTiles.map(
+      (blockerTile) => blockerTile.pieceData!
+    );
+  }
+
+  updateLatentCheck(targetTile: Tile, kingCoordinates: KingCoordinates) {
+    if (
+      !targetTile.pieceData ||
+      (!targetTile.pieceData.blocking.length &&
+        !targetTile.piecesTargetingKingViaThisTile.length)
+    )
+      return;
+    targetTile.pieceData.blocking.forEach((piece) =>
+      this.latentCheck(piece, kingCoordinates, piece.belongsTo)
+    );
+
+    targetTile.piecesTargetingKingViaThisTile.forEach((piece) =>
+      this.latentCheck(piece, kingCoordinates, piece.belongsTo)
+    );
   }
 }

@@ -9,6 +9,7 @@ export default class Tile {
   hasPiece = false;
   pieceData: Piece | null = null;
   element: Element;
+  piecesTargetingKingViaThisTile: Piece[] = [];
 
   static chessboardElement: Element;
 

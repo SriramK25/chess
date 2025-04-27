@@ -70,12 +70,30 @@ export default class GameState {
       }
 
       if (target.classList.contains("possible-move")) {
+        // Move the Selected Piece
         this.#moveManager.movePiece(
           targetTile,
           this.previouslyFocusedTileWithPiece
-        ) && this.switchPlayer(players);
+        );
 
-        targetTile.pieceData!.nextLatentMove = this.getMovesForPiece(ta);
+        this.#moveManager.updateLatentCheck(targetTile, this.#kingCoordinates);
+
+        // Get Next Moves for the Moved Piece
+        targetTile.pieceData!.nextLatentMove = this.getMovesForPiece(
+          targetTile.pieceData!.type,
+          targetTile.getCoordinate(),
+          tileGraph
+        );
+
+        // Check whether the Moved Piece's Next Move has King in its path (With & Without Blockers)
+        this.#moveManager.latentCheck(
+          targetTile.pieceData!,
+          this.#kingCoordinates,
+          this.playerTurn
+        );
+
+        // Switch to Next Player
+        this.switchPlayer(players);
 
         return;
       }
@@ -98,11 +116,15 @@ export default class GameState {
 
     let availableTilesToMovePiece: Array<Tile[]> = [];
 
-    if (targetTile.pieceData.nextLatentMove.length) {
+    if (
+      targetTile.pieceData.nextLatentMove.length &&
+      !targetTile.pieceData.isProtectingKingFromOpponentLatentMove
+    ) {
       availableTilesToMovePiece = targetTile.pieceData.nextLatentMove;
       this.#focusedPiece = targetTile.pieceData.type;
       console.log("From Latent Move");
     } else {
+      // availableTilesToMovePiece = [];
     }
 
     this.updateGameState(availableTilesToMovePiece);
@@ -114,6 +136,13 @@ export default class GameState {
     tileGraph: TileGraph
   ): Array<Tile[]> {
     let availableTilesToMovePiece: Array<Tile[]> = [];
+    let targetedPiece = tileGraph.getTileByVertex(coordinate);
+
+    if (
+      targetedPiece.hasPiece &&
+      targetedPiece.pieceData?.isProtectingKingFromOpponentLatentMove
+    )
+      return [];
 
     switch (pieceType) {
       case "pawn": {
@@ -121,7 +150,7 @@ export default class GameState {
           coordinate,
           tileGraph
         );
-        this.#focusedPiece = "pawn";
+        // this.#focusedPiece = "pawn";
         break;
       }
 
@@ -177,9 +206,9 @@ export default class GameState {
       this.previousAvailableTilesToMovePiece,
       this.playerTurn
     );
-    players
-      .get(this.playerTurn)
-      ?.piecesOnBoard.forEach((piece) => (piece.cachedMoves.length = 0));
+    // players
+    // .get(this.playerTurn)
+    // ?.piecesOnBoard.forEach((piece) => (piece.cachedMoves.length = 0));
 
     this.playerTurn = this.playerTurn === "white" ? "black" : "white";
   }

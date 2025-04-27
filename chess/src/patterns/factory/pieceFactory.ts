@@ -15,12 +15,14 @@ export default class Piece implements IPiece {
   onTile: Coordinate;
   type: PieceType;
   hasCaptured: boolean;
-  cachedMoves: Array<Tile[]>;
   nextLatentMove: Array<Tile[]>;
+  blockerPieces: Piece[] = [];
+  blocking: Piece[] = [];
   startTile: Coordinate;
   hasMoved: boolean;
   hasPromotion: boolean;
   hasCastling: boolean;
+  isProtectingKingFromOpponentLatentMove: boolean = false;
 
   private constructor(
     belongsTo: Player,
@@ -33,7 +35,6 @@ export default class Piece implements IPiece {
     this.onTile = startTile;
     this.type = pieceType;
     this.hasCaptured = false;
-    this.cachedMoves = [];
     this.nextLatentMove = nextLatentMoves;
     this.startTile = startTile;
     this.hasMoved = false;
