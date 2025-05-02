@@ -83,7 +83,8 @@ export default class Tile {
       for (let tile of availableSideToMovePiece) {
         if (tile.hasPiece) {
           tile.player !== playerTurn && tile.addCaptureMove();
-          return;
+          if (pieceType === "knight") continue;
+          else return;
         }
         tile.addPossibleMove();
       }
@@ -137,6 +138,7 @@ export default class Tile {
     if (!pieceElement) return;
 
     if (toTileHasPiece) {
+      this.pieceData!.hasCaptured = true;
       this.element.querySelector("img[id$='piece']")?.remove();
     }
 

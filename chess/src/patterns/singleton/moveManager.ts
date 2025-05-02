@@ -309,17 +309,19 @@ export default class MoveManager {
     ];
   }
 
+  // Checks Whether a Piece (Like Queen, Bishop etc...) can able to Check the Opponent's King, but some other Pieces are on the Way blocking the Path, So Storing that in Internal States to Avoid Players Accidentally Moving such pieces that exposes their King to Check
   latentCheck(
     targetPiece: Piece,
     kingCoordinates: KingCoordinates,
-    playerTurn: PlayerType
+    playerTurn: PlayerType,
+    tileGraph: TileGraph
   ) {
     const potentialBlockerTiles: Tile[] = [];
 
     for (let latentMoveTiles of targetPiece.nextLatentMove) {
       let latentMoveTileIndex = latentMoveTiles.length - 1;
       let hasFoundKing = false;
-
+      let hasTargetPieceTileIncluded = false;
       for (
         latentMoveTileIndex;
         latentMoveTileIndex >= 0;
@@ -336,9 +338,16 @@ export default class MoveManager {
         if (!hasFoundKing) continue;
 
         let tile = latentMoveTiles[latentMoveTileIndex];
-        targetPiece.targetingOpponentKingViaTiles.add(tile);
 
+        targetPiece.targetingOpponentKingViaTiles.add(tile);
         tile.piecesTargetingKingViaThisTile.set(targetPiece.id, targetPiece);
+
+        if (!hasTargetPieceTileIncluded) {
+          hasTargetPieceTileIncluded = true;
+          targetPiece.targetingOpponentKingViaTiles.add(
+            tileGraph.getTileByVertex(targetPiece.onTile)
+          );
+        }
 
         if (tile.hasPiece) {
           tile.pieceData?.blocking.set(targetPiece.id, targetPiece);
@@ -363,7 +372,11 @@ export default class MoveManager {
     );
   }
 
-  updateLatentCheck(targetTile: Tile, kingCoordinates: KingCoordinates) {
+  updateLatentCheck(
+    targetTile: Tile,
+    kingCoordinates: KingCoordinates,
+    tileGraph: TileGraph
+  ) {
     if (
       !targetTile.pieceData ||
       (!targetTile.pieceData.blocking.size &&
@@ -371,12 +384,13 @@ export default class MoveManager {
     )
       return;
 
+    // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent Piece's Latent Check, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
     targetTile.pieceData.blocking.forEach((piece) =>
-      this.latentCheck(piece, kingCoordinates, piece.belongsTo)
+      this.latentCheck(piece, kingCoordinates, piece.belongsTo, tileGraph)
     );
 
     targetTile.piecesTargetingKingViaThisTile.forEach((piece) =>
-      this.latentCheck(piece, kingCoordinates, piece.belongsTo)
+      this.latentCheck(piece, kingCoordinates, piece.belongsTo, tileGraph)
     );
   }
 }

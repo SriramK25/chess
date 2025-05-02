@@ -19,6 +19,7 @@ export default class GameState {
   #moveManager: MoveManager;
   #kingCoordinates!: KingCoordinates;
   #focusedPiece: PieceType | null = null;
+  #players!: PlayersData;
 
   private constructor(playerTurn: PlayerType) {
     this.playerTurn = playerTurn;
@@ -38,6 +39,7 @@ export default class GameState {
     kingCoordinates: KingCoordinates
   ) {
     this.#kingCoordinates = kingCoordinates;
+    this.#players = players;
     this.listenToBoard(chessboardElement, tileGraph, players);
   }
 
@@ -95,7 +97,40 @@ export default class GameState {
   }
 
   private updateStateForMovedPiece(targetTile: Tile, tileGraph: TileGraph) {
-    this.#moveManager.updateLatentCheck(targetTile, this.#kingCoordinates);
+    // If Moved Piece was King then we Update its State
+    if (targetTile.pieceData && targetTile.pieceData.type === "king") {
+      const movedKingBelongsTo = targetTile.pieceData.belongsTo;
+
+      this.#kingCoordinates[`${movedKingBelongsTo}King`] =
+        targetTile.getCoordinate();
+
+      const doLatentCheckFor =
+        movedKingBelongsTo === "white" ? "black" : "white";
+
+      this.#players.get(doLatentCheckFor)?.piecesOnBoard.forEach((piece) => {
+        if (piece.hasCaptured) return;
+
+        piece.blockerPieces.clear();
+        piece.blocking.clear();
+        piece.targetingOpponentKingViaTiles.forEach((tile) => {
+          tile.piecesTargetingKingViaThisTile.clear();
+        });
+        piece.targetingOpponentKingViaTiles.clear();
+
+        this.#moveManager.latentCheck(
+          piece,
+          this.#kingCoordinates,
+          doLatentCheckFor,
+          tileGraph
+        );
+      });
+    }
+
+    this.#moveManager.updateLatentCheck(
+      targetTile,
+      this.#kingCoordinates,
+      tileGraph
+    );
 
     // Get Next Moves for the Moved Piece
     targetTile.pieceData!.nextLatentMove = this.getMovesForPiece(
@@ -108,7 +143,8 @@ export default class GameState {
     this.#moveManager.latentCheck(
       targetTile.pieceData!,
       this.#kingCoordinates,
-      this.playerTurn
+      this.playerTurn,
+      tileGraph
     );
   }
 
