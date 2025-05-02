@@ -16,13 +16,14 @@ export default class Piece implements IPiece {
   type: PieceType;
   hasCaptured: boolean;
   nextLatentMove: Array<Tile[]>;
-  blockerPieces: Piece[] = [];
-  blocking: Piece[] = [];
+  blockerPieces: Map<string, Piece> = new Map();
+  blocking: Map<string, Piece> = new Map();
   startTile: Coordinate;
   hasMoved: boolean;
   hasPromotion: boolean;
   hasCastling: boolean;
   isProtectingKingFromOpponentLatentMove: boolean = false;
+  targetingOpponentKingViaTiles: Set<Tile> = new Set();
 
   private constructor(
     belongsTo: Player,

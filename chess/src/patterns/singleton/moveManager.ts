@@ -336,11 +336,12 @@ export default class MoveManager {
         if (!hasFoundKing) continue;
 
         let tile = latentMoveTiles[latentMoveTileIndex];
+        targetPiece.targetingOpponentKingViaTiles.add(tile);
 
-        tile.piecesTargetingKingViaThisTile.push(targetPiece);
+        tile.piecesTargetingKingViaThisTile.set(targetPiece.id, targetPiece);
 
         if (tile.hasPiece) {
-          tile.pieceData?.blocking.push(targetPiece);
+          tile.pieceData?.blocking.set(targetPiece.id, targetPiece);
           tile.pieceData!.isProtectingKingFromOpponentLatentMove =
             tile.pieceData?.belongsTo !== playerTurn ? true : false;
           potentialBlockerTiles.push(tile);
@@ -354,18 +355,22 @@ export default class MoveManager {
       });
     }
 
-    targetPiece.blockerPieces = potentialBlockerTiles.map(
-      (blockerTile) => blockerTile.pieceData!
+    potentialBlockerTiles.map((blockerTile) =>
+      targetPiece.blockerPieces.set(
+        blockerTile.pieceData!.id,
+        blockerTile.pieceData!
+      )
     );
   }
 
   updateLatentCheck(targetTile: Tile, kingCoordinates: KingCoordinates) {
     if (
       !targetTile.pieceData ||
-      (!targetTile.pieceData.blocking.length &&
-        !targetTile.piecesTargetingKingViaThisTile.length)
+      (!targetTile.pieceData.blocking.size &&
+        !targetTile.piecesTargetingKingViaThisTile.size)
     )
       return;
+
     targetTile.pieceData.blocking.forEach((piece) =>
       this.latentCheck(piece, kingCoordinates, piece.belongsTo)
     );

@@ -9,7 +9,7 @@ export default class Tile {
   hasPiece = false;
   pieceData: Piece | null = null;
   element: Element;
-  piecesTargetingKingViaThisTile: Piece[] = [];
+  piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
 
   static chessboardElement: Element;
 
@@ -148,6 +148,8 @@ export default class Tile {
     this.pieceData = fromTile.pieceData;
     this.pieceData!.onTile = this.getCoordinate();
     this.pieceData!.hasMoved = true;
+    this.pieceData!.blockerPieces.clear();
+    this.updatePiecesTargetingKingViaTiles(this.pieceData!);
     this.changeStatusOfSenderTile(fromTile);
   }
 
@@ -156,6 +158,22 @@ export default class Tile {
     fromTile.player = null;
     fromTile.pieceData = null;
     fromTile.removeFocus();
+  }
+
+  private updatePiecesTargetingKingViaTiles(piece: Piece) {
+    if (!piece)
+      throw new Error("Piece Not Found while trying to update Tile Data");
+
+    piece.targetingOpponentKingViaTiles.forEach((tile) => {
+      tile.piecesTargetingKingViaThisTile.delete(piece.id);
+
+      if (!tile.hasPiece || !tile.pieceData) return;
+
+      tile.pieceData.isProtectingKingFromOpponentLatentMove = false;
+      tile.pieceData.blocking.delete(piece.id);
+    });
+
+    piece.targetingOpponentKingViaTiles.clear();
   }
 
   addFocus(): void {
