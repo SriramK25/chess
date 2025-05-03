@@ -40,13 +40,12 @@ export default class GameState {
   ) {
     this.#kingCoordinates = kingCoordinates;
     this.#players = players;
-    this.listenToBoard(chessboardElement, tileGraph, players);
+    this.listenToBoard(chessboardElement, tileGraph);
   }
 
   private listenToBoard(
     chessboardElement: Element,
-    tileGraph: TileGraph,
-    players: PlayersData
+    tileGraph: TileGraph
   ): void {
     chessboardElement.addEventListener("click", (event) => {
       let target = event.target as HTMLElement;
@@ -114,6 +113,7 @@ export default class GameState {
         piece.blocking.clear();
         piece.targetingOpponentKingViaTiles.forEach((tile) => {
           tile.piecesTargetingKingViaThisTile.clear();
+          tile.piecesTargetingNeighborTilesOfKing.clear();
         });
         piece.targetingOpponentKingViaTiles.clear();
 
@@ -146,6 +146,14 @@ export default class GameState {
       this.playerTurn,
       tileGraph
     );
+
+    // Check Whether the Moved Piece is Targeting King's Neighbor Coords
+    this.#moveManager.latentCheckForKingMoves(
+      targetTile.pieceData!,
+      this.#kingCoordinates,
+      this.playerTurn,
+      tileGraph
+    );
   }
 
   private allowPlayerToMovePiece(targetTile: Tile) {
@@ -160,19 +168,55 @@ export default class GameState {
 
     if (
       targetTile.pieceData.nextLatentMove.length &&
+      targetTile.pieceData.type === "king"
+    ) {
+      availableTilesToMovePiece = this.getSafeMovesForKing(targetTile);
+    } else if (
+      targetTile.pieceData.nextLatentMove.length &&
       !targetTile.pieceData.isProtectingKingFromOpponentLatentMove
     ) {
       availableTilesToMovePiece = targetTile.pieceData.nextLatentMove;
-      this.#focusedPiece = targetTile.pieceData.type;
     } else if (
       targetTile.pieceData.nextLatentMove.length &&
       targetTile.pieceData.isProtectingKingFromOpponentLatentMove
     ) {
       availableTilesToMovePiece = this.getSafeMoves(targetTile);
-      this.#focusedPiece = targetTile.pieceData.type;
     }
 
+    this.#focusedPiece = targetTile.pieceData.type;
     this.updateGameState(availableTilesToMovePiece);
+  }
+
+  private getSafeMovesForKing(targetTile: Tile): Array<Tile[]> {
+    if (!targetTile || !targetTile.pieceData)
+      throw new Error("Error Occured While getting Safe moves for King");
+
+    const newLatentMove: Array<Tile[]> = [];
+
+    for (let nextLatentMoveSide of targetTile.pieceData.nextLatentMove) {
+      const newLatentMoveSide: Tile[] = [];
+
+      nextLatentMoveSide.forEach((latentMoveTile) => {
+        let isSafeTile = true;
+        if (latentMoveTile.piecesTargetingKingViaThisTile.size) {
+          latentMoveTile.piecesTargetingKingViaThisTile.forEach((piece) => {
+            if (!piece.blockerPieces.size) isSafeTile = false;
+          });
+        }
+
+        if (latentMoveTile.piecesTargetingNeighborTilesOfKing.size) {
+          latentMoveTile.piecesTargetingNeighborTilesOfKing.forEach((piece) => {
+            if (!piece.blockerPieces.size) isSafeTile = false;
+          });
+        }
+
+        isSafeTile && newLatentMoveSide.push(latentMoveTile);
+      });
+
+      newLatentMove.push(newLatentMoveSide);
+    }
+
+    return newLatentMove;
   }
 
   private getSafeMoves(targetTile: Tile): Array<Tile[]> {

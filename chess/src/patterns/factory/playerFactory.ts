@@ -23,8 +23,13 @@ export default class Player {
 
     readonlyPlayers.forEach((player) => {
       const playerHasPiecesOnBoard = tiles
-        .filter((tile) => tile.hasPiece && tile.pieceData?.belongsTo === player)
-        .map((tile) => tile.pieceData!);
+        .filter(
+          (tile): tile is typeof tile & { pieceData: Piece } =>
+            tile.hasPiece &&
+            tile.pieceData !== null &&
+            tile.pieceData.belongsTo === player
+        )
+        .map((tile) => tile.pieceData);
 
       players.set(player, new Player(player, playerHasPiecesOnBoard));
     });

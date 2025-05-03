@@ -385,12 +385,63 @@ export default class MoveManager {
       return;
 
     // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent Piece's Latent Check, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
-    targetTile.pieceData.blocking.forEach((piece) =>
-      this.latentCheck(piece, kingCoordinates, piece.belongsTo, tileGraph)
-    );
+    targetTile.pieceData.blocking.forEach((piece) => {
+      this.latentCheck(piece, kingCoordinates, piece.belongsTo, tileGraph);
+      piece.blockerPieces.delete(targetTile.pieceData!.id);
+    });
+
+    targetTile.pieceData.blocking.clear();
 
     targetTile.piecesTargetingKingViaThisTile.forEach((piece) =>
       this.latentCheck(piece, kingCoordinates, piece.belongsTo, tileGraph)
     );
+  }
+
+  // To Check and Update if Any Opponent Piece is Targeting the King Neighbor Tiles
+  latentCheckForKingMoves(
+    movedPiece: Piece,
+    kingCoordinates: KingCoordinates,
+    playerTurn: PlayerType,
+    tileGraph: TileGraph
+  ) {
+    const neighborTilesOfOpponentKing = tileGraph.getNeighbors(
+      playerTurn === "white"
+        ? kingCoordinates["blackKing"]
+        : kingCoordinates["whiteKing"]
+    );
+
+    for (let latentSide of movedPiece.nextLatentMove) {
+      if (
+        !latentSide.some((tile) => {
+          neighborTilesOfOpponentKing.has(tile.getCoordinate());
+        })
+      )
+        break;
+
+      for (let latentMoveTile of latentSide) {
+        latentMoveTile.piecesTargetingNeighborTilesOfKing.set(
+          movedPiece.id,
+          movedPiece
+        );
+
+        if (latentMoveTile.hasPiece && movedPiece.type !== "knight") {
+          movedPiece.blockerPieces.set(
+            latentMoveTile.pieceData!.id,
+            latentMoveTile.pieceData!
+          );
+
+          latentMoveTile.pieceData!.blocking.set(movedPiece.id, movedPiece);
+        }
+
+        if (neighborTilesOfOpponentKing.has(latentMoveTile.getCoordinate())) {
+          latentMoveTile.piecesTargetingNeighborTilesOfKing.set(
+            movedPiece.id,
+            movedPiece
+          );
+
+          break;
+        }
+      }
+    }
   }
 }

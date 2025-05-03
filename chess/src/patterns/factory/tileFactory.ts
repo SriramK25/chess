@@ -10,6 +10,7 @@ export default class Tile {
   pieceData: Piece | null = null;
   element: Element;
   piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
+  piecesTargetingNeighborTilesOfKing: Map<string, Piece> = new Map();
 
   static chessboardElement: Element;
 

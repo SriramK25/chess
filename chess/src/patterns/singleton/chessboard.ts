@@ -4,7 +4,7 @@ import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
 import GameState from "./gameState";
 import { PlayersData } from "../../types/mapTypes";
-import { KingCoordinates } from "../../types/indexedAccessTypes";
+import { Coordinate, KingCoordinates } from "../../types/indexedAccessTypes";
 
 export default class Chessboard {
   static #instance: Chessboard | null = null;
@@ -46,5 +46,10 @@ export default class Chessboard {
   static getInstance(): Chessboard {
     if (!this.#instance) this.#instance = new Chessboard();
     return this.#instance;
+  }
+
+  // For Debugging -- Remove Later --
+  getTileData(tile: Coordinate) {
+    return this.#graph.getTileByVertex(tile);
   }
 }

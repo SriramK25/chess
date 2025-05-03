@@ -24,6 +24,7 @@ export default class Piece implements IPiece {
   hasCastling: boolean;
   isProtectingKingFromOpponentLatentMove: boolean = false;
   targetingOpponentKingViaTiles: Set<Tile> = new Set();
+  targetingOpponentKingNeighborTiles: Set<Tile> = new Set();
 
   private constructor(
     belongsTo: Player,
@@ -31,7 +32,7 @@ export default class Piece implements IPiece {
     startTile: Coordinate,
     nextLatentMoves: Array<Tile[]>
   ) {
-    this.id = crypto.randomUUID();
+    this.id = `${belongsTo}-${pieceType}-${crypto.randomUUID()}`;
     this.belongsTo = belongsTo;
     this.onTile = startTile;
     this.type = pieceType;
