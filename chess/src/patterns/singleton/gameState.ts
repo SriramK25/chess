@@ -103,52 +103,91 @@ export default class GameState {
       this.#kingCoordinates[`${movedKingBelongsTo}King`] =
         targetTile.getCoordinate();
 
-      const doLatentCheckFor =
-        movedKingBelongsTo === "white" ? "black" : "white";
+      const opponent = movedKingBelongsTo === "white" ? "black" : "white";
 
-      this.#players.get(doLatentCheckFor)?.piecesOnBoard.forEach((piece) => {
+      this.#players.get(opponent)?.piecesOnBoard.forEach((piece) => {
         if (piece.hasCaptured) return;
 
         piece.blockerPieces.clear();
         piece.blocking.clear();
-        piece.targetingOpponentKingViaTiles.forEach((tile) => {
-          tile.piecesTargetingKingViaThisTile.clear();
-          tile.piecesTargetingNeighborTilesOfKing.clear();
-        });
-        piece.targetingOpponentKingViaTiles.clear();
 
-        this.#moveManager.latentCheck(
+        this.#moveManager.threatensKingOnNextMove(
           piece,
           this.#kingCoordinates,
-          doLatentCheckFor,
+          opponent,
           tileGraph
         );
       });
     }
 
-    this.#moveManager.updateLatentCheck(
+    this.#moveManager.checkMovingBlockerThreatensKing(
       targetTile,
       this.#kingCoordinates,
       tileGraph
     );
 
+    targetTile.pieceData!.blockerPieces.forEach((blockerPiece) => {
+      blockerPiece.blocking.clear();
+      blockerPiece.isProtectingKingFromOpponentPiece = false;
+    });
+
+    targetTile.piecesTargetingThisTile.forEach((opponentPiece) => {
+      if (
+        !opponentPiece.nextMove.some((side) =>
+          side.some(
+            (move) =>
+              move.getCoordinate() ===
+              this.#kingCoordinates[`${targetTile.pieceData!.belongsTo}King`]
+          )
+        )
+      )
+        return;
+
+      if (opponentPiece.blockerPieces.size === 1) {
+        Array.from(
+          opponentPiece.blockerPieces.values()
+        )[0].isProtectingKingFromOpponentPiece = false;
+      } else if (!opponentPiece.blockerPieces.size) {
+        targetTile.pieceData!.isProtectingKingFromOpponentPiece = true;
+      }
+
+      opponentPiece.blockerPieces.set(
+        targetTile.pieceData!.id,
+        targetTile.pieceData!
+      );
+
+      targetTile.pieceData!.blocking.set(opponentPiece.id, opponentPiece);
+    });
+
+    targetTile.pieceData!.blockerPieces.clear();
+
+    targetTile.pieceData?.nextMove.forEach((side) => {
+      side.forEach((move) => {
+        if (!targetTile.pieceData) return;
+        move.piecesTargetingThisTile.delete(targetTile.pieceData.id);
+      });
+    });
+
     // Get Next Moves for the Moved Piece
-    targetTile.pieceData!.nextLatentMove = this.getMovesForPiece(
+    targetTile.pieceData!.nextMove = this.getNextMovesForMovedPiece(
       targetTile.pieceData!.type,
       targetTile.getCoordinate(),
       tileGraph
     );
 
-    // Check whether the Moved Piece's Next Move has King in its path (With & Without Blockers)
-    this.#moveManager.latentCheck(
-      targetTile.pieceData!,
-      this.#kingCoordinates,
-      this.playerTurn,
-      tileGraph
-    );
+    // Register Moved Piece's Next move to the Tiles
+    targetTile.pieceData?.nextMove.forEach((side) => {
+      side.forEach((move) => {
+        if (!targetTile.pieceData) return;
+        move.piecesTargetingThisTile.set(
+          targetTile.pieceData.id,
+          targetTile.pieceData
+        );
+      });
+    });
 
-    // Check Whether the Moved Piece is Targeting King's Neighbor Coords
-    this.#moveManager.latentCheckForKingMoves(
+    // Check whether the Moved Piece's Next Move has King in its path (With & Without Blockers)
+    this.#moveManager.threatensKingOnNextMove(
       targetTile.pieceData!,
       this.#kingCoordinates,
       this.playerTurn,
@@ -167,18 +206,18 @@ export default class GameState {
     let availableTilesToMovePiece: Array<Tile[]> = [];
 
     if (
-      targetTile.pieceData.nextLatentMove.length &&
+      targetTile.pieceData.nextMove.length &&
       targetTile.pieceData.type === "king"
     ) {
       availableTilesToMovePiece = this.getSafeMovesForKing(targetTile);
     } else if (
-      targetTile.pieceData.nextLatentMove.length &&
-      !targetTile.pieceData.isProtectingKingFromOpponentLatentMove
+      targetTile.pieceData.nextMove.length &&
+      !targetTile.pieceData.isProtectingKingFromOpponentPiece
     ) {
-      availableTilesToMovePiece = targetTile.pieceData.nextLatentMove;
+      availableTilesToMovePiece = targetTile.pieceData.nextMove;
     } else if (
-      targetTile.pieceData.nextLatentMove.length &&
-      targetTile.pieceData.isProtectingKingFromOpponentLatentMove
+      targetTile.pieceData.nextMove.length &&
+      targetTile.pieceData.isProtectingKingFromOpponentPiece
     ) {
       availableTilesToMovePiece = this.getSafeMoves(targetTile);
     }
@@ -193,25 +232,41 @@ export default class GameState {
 
     const newLatentMove: Array<Tile[]> = [];
 
-    for (let nextLatentMoveSide of targetTile.pieceData.nextLatentMove) {
+    for (let nextMoveSide of targetTile.pieceData.nextMove) {
+      // With this If we only Check Empty Tiles
+      if (nextMoveSide[0].hasPiece) continue;
+
+      const piecesTargetingNextMoveTileOfKing = Array.from(
+        nextMoveSide[0].piecesTargetingThisTile.values()
+      ).filter((piece) => piece.belongsTo !== targetTile.pieceData?.belongsTo);
+
+      if (!piecesTargetingNextMoveTileOfKing.length) {
+        newLatentMove.push([nextMoveSide[0]]);
+        continue;
+      }
+
       const newLatentMoveSide: Tile[] = [];
+      let isSafeTile = true;
 
-      nextLatentMoveSide.forEach((latentMoveTile) => {
-        let isSafeTile = true;
-        if (latentMoveTile.piecesTargetingKingViaThisTile.size) {
-          latentMoveTile.piecesTargetingKingViaThisTile.forEach((piece) => {
-            if (!piece.blockerPieces.size) isSafeTile = false;
-          });
+      isSafeTile = piecesTargetingNextMoveTileOfKing.some(
+        (piece) => piece.blockerPieces.size
+      );
+
+      isSafeTile = piecesTargetingNextMoveTileOfKing.some((piece) => {
+        const kingSideMoves = piece.nextMove.find((tiles) =>
+          tiles.some(
+            (tile) => tile.getCoordinate() === nextMoveSide[0].getCoordinate()
+          )
+        );
+        if (!kingSideMoves || !kingSideMoves.length) return false;
+
+        for (let tile of kingSideMoves) {
+          if (tile.getCoordinate() === nextMoveSide[0].getCoordinate()) break;
+          if (tile.hasPiece) return true;
         }
-
-        if (latentMoveTile.piecesTargetingNeighborTilesOfKing.size) {
-          latentMoveTile.piecesTargetingNeighborTilesOfKing.forEach((piece) => {
-            if (!piece.blockerPieces.size) isSafeTile = false;
-          });
-        }
-
-        isSafeTile && newLatentMoveSide.push(latentMoveTile);
       });
+
+      isSafeTile && newLatentMoveSide.push(nextMoveSide[0]);
 
       newLatentMove.push(newLatentMoveSide);
     }
@@ -226,14 +281,14 @@ export default class GameState {
     const opponentPieceTargetingKingCoordinates: Set<Coordinate> = new Set();
 
     targetTile.pieceData.blocking.forEach((opponentPiece) => {
-      opponentPiece.targetingOpponentKingViaTiles.forEach((tile) => {
-        opponentPieceTargetingKingCoordinates.add(tile.getCoordinate());
-      });
+      // opponentPiece.targetingOpponentKingViaTiles.forEach((tile) => {
+      //   opponentPieceTargetingKingCoordinates.add(tile.getCoordinate());
+      // });
     });
 
     const newLatentMove: Array<Tile[]> = [];
 
-    for (let latentMoveSide of targetTile.pieceData.nextLatentMove) {
+    for (let latentMoveSide of targetTile.pieceData.nextMove) {
       const newLatentMoveSide: Tile[] = [];
 
       latentMoveSide.forEach((latentMoveTile) => {
@@ -248,7 +303,7 @@ export default class GameState {
     return newLatentMove;
   }
 
-  getMovesForPiece(
+  getNextMovesForMovedPiece(
     pieceType: PieceType,
     coordinate: Coordinate,
     tileGraph: TileGraph
@@ -311,21 +366,15 @@ export default class GameState {
 
   switchPlayer() {
     if (!this.previouslyFocusedTileWithPiece) return;
-
-    Tile.removePreviousAvailableMoves(
-      this.previousAvailableTilesToMovePiece,
-      this.playerTurn
-    );
-
+    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
     this.playerTurn = this.playerTurn === "white" ? "black" : "white";
   }
 
   private updateGameState(availableTilesToMovePiece: Array<Tile[]>) {
-    Tile.removePreviousAvailableMoves(
-      this.previousAvailableTilesToMovePiece,
-      this.playerTurn
-    );
+    Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
+
     this.previousAvailableTilesToMovePiece = availableTilesToMovePiece;
+
     Tile.showAvailableMoves(
       availableTilesToMovePiece,
       this.playerTurn,

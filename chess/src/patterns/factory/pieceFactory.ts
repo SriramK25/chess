@@ -15,29 +15,29 @@ export default class Piece implements IPiece {
   onTile: Coordinate;
   type: PieceType;
   hasCaptured: boolean;
-  nextLatentMove: Array<Tile[]>;
+  nextMove: Array<Tile[]>;
   blockerPieces: Map<string, Piece> = new Map();
   blocking: Map<string, Piece> = new Map();
   startTile: Coordinate;
   hasMoved: boolean;
   hasPromotion: boolean;
   hasCastling: boolean;
-  isProtectingKingFromOpponentLatentMove: boolean = false;
-  targetingOpponentKingViaTiles: Set<Tile> = new Set();
-  targetingOpponentKingNeighborTiles: Set<Tile> = new Set();
+  isProtectingKingFromOpponentPiece: boolean = false;
+  // targetingOpponentKingViaTiles: Set<Tile> = new Set();
+  // targetingOpponentKingNeighborTiles: Set<Tile> = new Set();
 
   private constructor(
     belongsTo: Player,
     pieceType: PieceType,
     startTile: Coordinate,
-    nextLatentMoves: Array<Tile[]>
+    nextMoves: Array<Tile[]>
   ) {
     this.id = `${belongsTo}-${pieceType}-${crypto.randomUUID()}`;
     this.belongsTo = belongsTo;
     this.onTile = startTile;
     this.type = pieceType;
     this.hasCaptured = false;
-    this.nextLatentMove = nextLatentMoves;
+    this.nextMove = nextMoves;
     this.startTile = startTile;
     this.hasMoved = false;
     this.hasPromotion = pieceType === "pawn";
@@ -67,18 +67,13 @@ export default class Piece implements IPiece {
             this.generatePiece(player, piece, tileCoordinate)
           );
 
-          const nextLatentMove = gameState.getMovesForPiece(
+          const nextMove = gameState.getNextMovesForMovedPiece(
             piece,
             tileCoordinate,
             tileGraph
           );
 
-          tile.pieceData = new Piece(
-            player,
-            piece,
-            tileCoordinate,
-            nextLatentMove
-          );
+          tile.pieceData = new Piece(player, piece, tileCoordinate, nextMove);
 
           if (piece === "king")
             kingCoordinates[`${player}King`] = tileCoordinate;

@@ -7,7 +7,7 @@ export default interface IPiece {
   onTile: Coordinate;
   type: PieceType;
   hasCaptured: boolean;
-  nextLatentMove: Array<Tile[]>;
+  nextMove: Array<Tile[]>;
   startTile: Coordinate;
   hasMoved: boolean;
 }

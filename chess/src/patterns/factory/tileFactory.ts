@@ -9,8 +9,9 @@ export default class Tile {
   hasPiece = false;
   pieceData: Piece | null = null;
   element: Element;
-  piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
-  piecesTargetingNeighborTilesOfKing: Map<string, Piece> = new Map();
+  piecesTargetingThisTile: Map<string, Piece> = new Map();
+  // piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
+  // piecesTargetingNeighborTilesOfKing: Map<string, Piece> = new Map();
 
   static chessboardElement: Element;
 
@@ -115,8 +116,7 @@ export default class Tile {
   }
 
   static removePreviousAvailableMoves(
-    previousAvailableSidesToMovePiece: Array<Tile[]>,
-    playerTurn: Player
+    previousAvailableSidesToMovePiece: Array<Tile[]>
   ) {
     previousAvailableSidesToMovePiece.forEach(
       (previousAvailableSideToMovePiece) => {
@@ -151,8 +151,8 @@ export default class Tile {
     this.pieceData = fromTile.pieceData;
     this.pieceData!.onTile = this.getCoordinate();
     this.pieceData!.hasMoved = true;
-    this.pieceData!.blockerPieces.clear();
-    this.updatePiecesTargetingKingViaTiles(this.pieceData!);
+    // this.pieceData!.blockerPieces.clear();
+    // this.updatePiecesTargetingKingViaTiles(this.pieceData!);
     this.changeStatusOfSenderTile(fromTile);
   }
 
@@ -163,21 +163,21 @@ export default class Tile {
     fromTile.removeFocus();
   }
 
-  private updatePiecesTargetingKingViaTiles(piece: Piece) {
-    if (!piece)
-      throw new Error("Piece Not Found while trying to update Tile Data");
+  // private updatePiecesTargetingKingViaTiles(piece: Piece) {
+  //   if (!piece)
+  //     throw new Error("Piece Not Found while trying to update Tile Data");
 
-    piece.targetingOpponentKingViaTiles.forEach((tile) => {
-      tile.piecesTargetingKingViaThisTile.delete(piece.id);
+  //   piece.targetingOpponentKingViaTiles.forEach((tile) => {
+  //     tile.piecesTargetingKingViaThisTile.delete(piece.id);
 
-      if (!tile.hasPiece || !tile.pieceData) return;
+  //     if (!tile.hasPiece || !tile.pieceData) return;
 
-      tile.pieceData.isProtectingKingFromOpponentLatentMove = false;
-      tile.pieceData.blocking.delete(piece.id);
-    });
+  //     tile.pieceData.isProtectingKingFromOpponentPiece = false;
+  //     tile.pieceData.blocking.delete(piece.id);
+  //   });
 
-    piece.targetingOpponentKingViaTiles.clear();
-  }
+  //   piece.targetingOpponentKingViaTiles.clear();
+  // }
 
   addFocus(): void {
     this.element.classList.add("focused");
