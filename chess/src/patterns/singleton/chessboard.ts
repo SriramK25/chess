@@ -1,55 +1,50 @@
-import Piece from "../factory/pieceFactory";
+import GameState from "./gameState";
 import Player from "../factory/playerFactory";
+import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
-import GameState from "./gameState";
-import { PlayersData } from "../../types/mapTypes";
 import { Coordinate, KingCoordinates } from "../../types/indexedAccessTypes";
+import { PlayersData } from "../../types/mapTypes";
 
 export default class Chessboard {
-  static #instance: Chessboard | null = null;
+  private static _instance: Chessboard | null = null;
 
-  #element = document.querySelector("#chess-board");
-  #graph: TileGraph = new TileGraph();
-  #tiles: Tile[] = [];
-  #players: PlayersData;
-  #game: GameState;
-  #kingCoordinates: KingCoordinates;
+  private _element = document.querySelector("#chess-board");
+  private _graph: TileGraph = new TileGraph();
+  private _tiles: Tile[] = [];
+  private _players: PlayersData;
+  private _game: GameState;
+  private _kingCoordinates: KingCoordinates;
 
   private constructor() {
-    if (!this.#element) throw new Error("Chessboard not found");
+    if (!this._element) throw new Error("Chessboard not found");
 
     // Create Game States and Everything for Internal Purpose
-    this.#game = GameState.getInstance();
+    this._game = GameState.getInstance();
 
     // Build Tiles
-    Tile.spawn(this.#element, this.#tiles);
+    Tile.spawn(this._element, this._tiles);
 
     // Build Graph for Internal purpose
-    this.#graph.initialise(this.#tiles);
+    this._graph.initialise(this._tiles);
 
     // Place Pieces on the Board
-    this.#kingCoordinates = Piece.spawn(this.#tiles, this.#game, this.#graph);
+    this._kingCoordinates = Piece.spawn(this._tiles, this._game, this._graph);
 
     // Initialise Players
-    this.#players = Player.initialisePlayers(this.#tiles);
+    this._players = Player.initialisePlayers(this._tiles);
 
     // Start the Game
-    this.#game.start(
-      this.#element,
-      this.#graph,
-      this.#players,
-      this.#kingCoordinates
-    );
+    this._game.start(this._element, this._graph, this._players, this._kingCoordinates);
   }
 
   static getInstance(): Chessboard {
-    if (!this.#instance) this.#instance = new Chessboard();
-    return this.#instance;
+    if (!this._instance) this._instance = new Chessboard();
+    return this._instance;
   }
 
   // For Debugging -- Remove Later --
   getTileData(tile: Coordinate) {
-    return this.#graph.getTileByVertex(tile);
+    return this._graph.getTileByVertex(tile);
   }
 }

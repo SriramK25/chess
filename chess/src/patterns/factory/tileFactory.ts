@@ -29,12 +29,9 @@ export default class Tile {
 
       tilesFragment.append(this.generateTileHTML(coordinate, tileColor));
 
-      const tileElement: Element | null = tilesFragment.querySelector(
-        `#tile-${coordinate}`
-      );
+      const tileElement: Element | null = tilesFragment.querySelector(`#tile-${coordinate}`);
 
-      if (!tileElement)
-        throw new Error("Tile not found while Initializing Chessboard");
+      if (!tileElement) throw new Error("Tile not found while Initializing Chessboard");
 
       tiles.push(new Tile(coordinate, tileElement));
     });
@@ -46,16 +43,12 @@ export default class Tile {
     const fileIndex = coordinate!.codePointAt(0);
     const rankIndex = +coordinate[1];
 
-    if (!fileIndex)
-      throw new Error("Coordinate Error while generating Tile Color");
+    if (!fileIndex) throw new Error("Coordinate Error while generating Tile Color");
 
     return (fileIndex + rankIndex) % 2 === 0 ? "black" : "white";
   }
 
-  private static generateTileHTML(
-    coordinate: Coordinate,
-    tileColor: "black" | "white"
-  ): HTMLElement {
+  private static generateTileHTML(coordinate: Coordinate, tileColor: "black" | "white"): HTMLElement {
     const divElement = document.createElement("div");
 
     divElement.id = `tile-${coordinate}`;
@@ -76,9 +69,7 @@ export default class Tile {
     pieceType: PieceType | null = null
   ) {
     if (pieceType === "pawn") {
-      availableSidesToMovePiece = this.filterMovesForPawn(
-        availableSidesToMovePiece
-      );
+      availableSidesToMovePiece = this.filterMovesForPawn(availableSidesToMovePiece);
     }
 
     availableSidesToMovePiece.forEach((availableSideToMovePiece) => {
@@ -109,32 +100,24 @@ export default class Tile {
         return filteredStraightTile;
       }
 
-      return availableSideToMovePawn[0].hasPiece
-        ? availableSideToMovePawn
-        : emptyTiles;
+      return availableSideToMovePawn[0].hasPiece ? availableSideToMovePawn : emptyTiles;
     });
   }
 
-  static removePreviousAvailableMoves(
-    previousAvailableSidesToMovePiece: Array<Tile[]>
-  ) {
-    previousAvailableSidesToMovePiece.forEach(
-      (previousAvailableSideToMovePiece) => {
-        for (let tile of previousAvailableSideToMovePiece) {
-          if (tile.hasPiece) {
-            tile.removeCaptureMove();
-            continue;
-          }
-          tile.removePossibleMove();
+  static removePreviousAvailableMoves(previousAvailableSidesToMovePiece: Array<Tile[]>) {
+    previousAvailableSidesToMovePiece.forEach((previousAvailableSideToMovePiece) => {
+      for (let tile of previousAvailableSideToMovePiece) {
+        if (tile.hasPiece) {
+          tile.removeCaptureMove();
+          continue;
         }
+        tile.removePossibleMove();
       }
-    );
+    });
   }
 
   getPieceFromAnotherTile(fromTile: Tile, toTileHasPiece: boolean = false) {
-    const pieceElement = fromTile.element.querySelector(
-      "img[id$='piece']"
-    ) as HTMLElement;
+    const pieceElement = fromTile.element.querySelector("img[id$='piece']") as HTMLElement;
 
     if (!pieceElement) return;
 

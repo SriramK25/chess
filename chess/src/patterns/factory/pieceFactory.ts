@@ -67,11 +67,7 @@ export default class Piece implements IPiece {
             this.generatePiece(player, piece, tileCoordinate)
           );
 
-          const nextMove = gameState.getNextMovesForMovedPiece(
-            piece,
-            tileCoordinate,
-            tileGraph
-          );
+          const nextMove = gameState.getMoves(piece, tileCoordinate, tileGraph);
 
           tile.pieceData = new Piece(player, piece, tileCoordinate, nextMove);
 

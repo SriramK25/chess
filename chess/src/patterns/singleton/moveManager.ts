@@ -1,13 +1,16 @@
-import { BOARD } from "../../rules/indexRules";
 import { Coordinate, KingCoordinates } from "../../types/indexedAccessTypes";
-import { Player as PlayerType } from "../../types/unionTypes";
+import { PieceType, Player as PlayerType } from "../../types/unionTypes";
 import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
+import MoveExecuter from "./moveExecuter";
+import MoveGenerator from "./moveGenerator";
 import TileGraph from "./tileGraph";
 
 // This Class is responsible for Calculating Moves for the Selected Piece by Player
 export default class MoveManager {
   static #instance: MoveManager | null = null;
+  private _moveGenerator = MoveGenerator.getInstance();
+  private _moveExecuter = MoveExecuter.getInstance();
 
   private constructor() {}
 
@@ -16,297 +19,46 @@ export default class MoveManager {
     return this.#instance;
   }
 
-  getMovesForPawn(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ): Array<Tile[]> {
-    const targetTile = tileGraph.getTileByVertex(tileCoordinate);
+  getMoves(pieceType: PieceType, coordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+    let availableTilesToMovePiece: Array<Tile[]> = [];
 
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ];
-
-    const nextTileRankIndex =
-      targetTile.player === "white"
-        ? (Number(tileCoordinate[1]) + 1).toString()
-        : (Number(tileCoordinate[1]) - 1).toString();
-
-    const availableTilesToMovePawn: Array<Tile[]> = [[], [], []];
-
-    const availableMoves = neighborTiles.filter(
-      (neighborTile) => neighborTile[1] === nextTileRankIndex
-    );
-
-    availableMoves.forEach((move, index) => {
-      if (tileCoordinate[0] === move[0]) {
-        const straightTile = tileGraph.getTileByVertex(move);
-        straightTile && availableTilesToMovePawn[0].push(straightTile);
+    switch (pieceType) {
+      case "pawn": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForPawn(coordinate, tileGraph);
+        break;
       }
 
-      if (tileCoordinate[0] === move[0] && !targetTile.pieceData?.hasMoved) {
-        const secondStraightRankIndex =
-          Number(nextTileRankIndex) + (targetTile.player === "white" ? 1 : -1);
-
-        const secondStraightTile = tileGraph.getTileByVertex(
-          `${move[0]}${secondStraightRankIndex}` as Coordinate
-        );
-
-        secondStraightTile &&
-          availableTilesToMovePawn[0].push(secondStraightTile);
+      case "king": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForKing(coordinate, tileGraph);
+        break;
       }
 
-      if (tileCoordinate[0] !== move[0]) {
-        const diagonalTile = tileGraph.getTileByVertex(move);
-        diagonalTile &&
-          availableTilesToMovePawn[!index ? index + 1 : index].push(
-            diagonalTile
-          );
+      case "queen": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForQueen(coordinate, tileGraph);
+        break;
       }
-    });
 
-    return availableTilesToMovePawn;
-  }
-
-  getMovesForKnight(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph,
-    playerTurn: PlayerType
-  ): Array<Tile[]> {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] === tileCoordinate[0] ||
-        neighborTile[1] === tileCoordinate[1]
-    );
-
-    const neighborTilesAsSet = new Set(neighborTiles);
-
-    const availableTilesToMoveKnight: Array<Tile[]> = [];
-
-    neighborTiles.forEach((tile, index) => {
-      const neighborsOfNeighborTile = [...tileGraph.getNeighbors(tile)].filter(
-        (neighborTile) =>
-          neighborTile[0] !== tile[0] && neighborTile[1] !== tile[1]
-      );
-
-      availableTilesToMoveKnight.push([]);
-
-      neighborsOfNeighborTile.forEach((neighborTile) => {
-        const tile = tileGraph.getTileByVertex(neighborTile);
-
-        !neighborTilesAsSet.has(neighborTile) &&
-          tile.player !== playerTurn &&
-          availableTilesToMoveKnight[index].push(tile);
-      });
-    });
-
-    return availableTilesToMoveKnight;
-  }
-
-  getMovesForBishop(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ): Array<Tile[]> {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] !== tileCoordinate[0] &&
-        neighborTile[1] !== tileCoordinate[1]
-    );
-
-    const availableTilesToMoveBishop: Array<Tile[]> = [];
-
-    neighborTiles.forEach((neighborTileCoordinate, index) => {
-      const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-
-      availableTilesToMoveBishop.push([neighborTile]);
-
-      const diagonalTileCoordinates = this.getDiagonals(
-        tileCoordinate,
-        neighborTileCoordinate,
-        tileGraph
-      );
-
-      for (const diagonalTileCoordinate of diagonalTileCoordinates) {
-        const diagonalTile = tileGraph.getTileByVertex(diagonalTileCoordinate);
-
-        availableTilesToMoveBishop[index].push(diagonalTile);
+      case "bishop": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForBishop(coordinate, tileGraph);
+        break;
       }
-    });
 
-    return availableTilesToMoveBishop;
-  }
+      case "knight": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForKnight(coordinate, tileGraph, this.playerTurn);
+        break;
+      }
 
-  getDiagonals(
-    previousTileCoordinate: Coordinate,
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ) {
-    const diagonalCoordinates = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (diagonalCoordinate) =>
-        diagonalCoordinate[0] !== tileCoordinate[0] &&
-        diagonalCoordinate[1] !== tileCoordinate[1] &&
-        diagonalCoordinate[0] !== previousTileCoordinate[0] &&
-        diagonalCoordinate[1] !== previousTileCoordinate[1]
-    );
-
-    if (diagonalCoordinates.length) {
-      diagonalCoordinates.map((diagonalCoordinate) => {
-        diagonalCoordinates.push(
-          ...this.getDiagonals(tileCoordinate, diagonalCoordinate, tileGraph)
-        );
-      });
+      case "rook": {
+        availableTilesToMovePiece = this._moveGenerator.getMovesForRook(coordinate, tileGraph);
+        break;
+      }
     }
 
-    return diagonalCoordinates;
+    return availableTilesToMovePiece;
   }
 
-  getMovesForRook(
-    tileCoordinate: Coordinate,
-    tileGraph: TileGraph
-  ): Array<Tile[]> {
-    const neighborTiles: Coordinate[] = [
-      ...tileGraph.getNeighbors(tileCoordinate),
-    ].filter(
-      (neighborTile) =>
-        neighborTile[0] === tileCoordinate[0] ||
-        neighborTile[1] === tileCoordinate[1]
-    );
-
-    const availableTilesToMoveRook: Array<Tile[]> = [];
-
-    neighborTiles.forEach((neighborTileCoordinate, index) => {
-      availableTilesToMoveRook.push([]);
-
-      const { iterableIndex, bindingIndex, indexName, seed } =
-        this.getIterableAndBindingIndex(tileCoordinate, neighborTileCoordinate);
-
-      for (const coordinate of this.generateMove(
-        iterableIndex,
-        bindingIndex,
-        indexName,
-        seed
-      )) {
-        const tile = tileGraph.getTileByVertex(coordinate as Coordinate);
-
-        availableTilesToMoveRook[index].push(tile);
-      }
-    });
-
-    return availableTilesToMoveRook;
-  }
-
-  getIterableAndBindingIndex(
-    onCoordinate: Coordinate,
-    neighborTileCoordinate: Coordinate
-  ): {
-    iterableIndex: number;
-    bindingIndex: string;
-    indexName: "rank" | "file";
-    seed: number;
-  } {
-    if (onCoordinate[0] === neighborTileCoordinate[0]) {
-      return {
-        iterableIndex: +neighborTileCoordinate[1],
-        bindingIndex: neighborTileCoordinate[0],
-        indexName: "rank",
-        seed: +onCoordinate[1] + 1 === +neighborTileCoordinate[1] ? 1 : -1,
-      };
-    }
-
-    const tileCoordinateCode = neighborTileCoordinate[0].charCodeAt(0);
-
-    return {
-      iterableIndex: tileCoordinateCode,
-      bindingIndex: neighborTileCoordinate[1],
-      indexName: "file",
-      seed:
-        onCoordinate.charCodeAt(0) + 1 ===
-        neighborTileCoordinate[0].charCodeAt(0)
-          ? 1
-          : -1,
-    };
-  }
-
-  movePiece(
-    targetTile: Tile,
-    previouslyFocusedTileWithPiece: Tile | null
-  ): boolean {
-    if (!targetTile || !previouslyFocusedTileWithPiece) return false;
-    targetTile.getPieceFromAnotherTile(previouslyFocusedTileWithPiece);
-    return true;
-  }
-
-  capturePiece(
-    targetTile: Tile,
-    previouslyFocusedTileWithPiece: Tile | null
-  ): boolean {
-    if (!targetTile || !previouslyFocusedTileWithPiece) return false;
-
-    targetTile.getPieceFromAnotherTile(previouslyFocusedTileWithPiece, true);
-    return true;
-  }
-
-  registerMoveAndCanAdvance(
-    tile: Tile,
-    playerTurn: PlayerType,
-    availableTilesToMovePiece: Tile[]
-  ): boolean {
-    if (tile.hasPiece) {
-      if (tile.player === playerTurn) return false;
-
-      availableTilesToMovePiece.push(tile);
-      return false;
-    }
-
-    availableTilesToMovePiece.push(tile);
-
-    return true;
-  }
-
-  *generateMove(
-    iterableIndex: number,
-    bindingIndex: string,
-    indexName: "file" | "rank",
-    seed: number
-  ) {
-    const maxIndex =
-      indexName === "file" ? BOARD.END_FILE_INDEX : BOARD.END_RANK_INDEX;
-    const minIndex =
-      indexName === "file" ? BOARD.START_FILE_INDEX : BOARD.START_RANK_INDEX;
-
-    for (
-      iterableIndex;
-      seed > 0 ? iterableIndex <= maxIndex : iterableIndex >= minIndex;
-      iterableIndex += seed
-    ) {
-      yield indexName === "file"
-        ? `${String.fromCharCode(iterableIndex)}${bindingIndex}`
-        : `${bindingIndex}${iterableIndex}`;
-    }
-  }
-
-  getMovesForKing(tileCoordinate: Coordinate, tileGraph: TileGraph) {
-    const neighborTileCoordinates = [...tileGraph.getNeighbors(tileCoordinate)];
-
-    const availableTilesToMoveKing: Array<Tile[]> = [];
-    neighborTileCoordinates.forEach((neighborTileCoordinate) => {
-      const neighborTile = tileGraph.getTileByVertex(neighborTileCoordinate);
-      availableTilesToMoveKing.push([neighborTile]);
-    });
-
-    return availableTilesToMoveKing;
-  }
-
-  getMovesForQueen(tileCoordinate: Coordinate, tileGraph: TileGraph) {
-    return [
-      ...this.getMovesForBishop(tileCoordinate, tileGraph),
-      ...this.getMovesForRook(tileCoordinate, tileGraph),
-    ];
+  executeMove(targetTile: Tile, previouslyFocusedTileWithPiece: Tile | null) {
+    this._moveExecuter.executeMove(targetTile, previouslyFocusedTileWithPiece);
   }
 
   // Checks Whether a Piece (Like Queen, Bishop etc...) can able to Check the Opponent's King, but some other Pieces are on the Way blocking the Path, So Storing that in Internal States to Avoid Players Accidentally Moving such pieces that exposes their King to Check
@@ -322,11 +74,8 @@ export default class MoveManager {
       let latentMoveTileIndex = latentMoveTiles.length - 1;
       let hasFoundKing = false;
       let hasTargetPieceTileIncluded = false;
-      for (
-        latentMoveTileIndex;
-        latentMoveTileIndex >= 0;
-        latentMoveTileIndex--
-      ) {
+
+      for (latentMoveTileIndex; latentMoveTileIndex >= 0; latentMoveTileIndex--) {
         if (
           latentMoveTiles[latentMoveTileIndex].getCoordinate() ===
           kingCoordinates[`${playerTurn === "white" ? "black" : "white"}King`]
@@ -359,18 +108,11 @@ export default class MoveManager {
     }
 
     potentialBlockerTiles.map((blockerTile) =>
-      targetPiece.blockerPieces.set(
-        blockerTile.pieceData!.id,
-        blockerTile.pieceData!
-      )
+      targetPiece.blockerPieces.set(blockerTile.pieceData!.id, blockerTile.pieceData!)
     );
   }
 
-  checkMovingBlockerThreatensKing(
-    targetTile: Tile,
-    kingCoordinates: KingCoordinates,
-    tileGraph: TileGraph
-  ) {
+  checkMovingBlockerThreatensKing(targetTile: Tile, kingCoordinates: KingCoordinates, tileGraph: TileGraph) {
     if (
       !targetTile.pieceData ||
       !targetTile.pieceData.blocking.size
@@ -380,12 +122,7 @@ export default class MoveManager {
 
     // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent Piece's Latent Check, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
     targetTile.pieceData.blocking.forEach((piece) => {
-      this.threatensKingOnNextMove(
-        piece,
-        kingCoordinates,
-        piece.belongsTo,
-        tileGraph
-      );
+      this.threatensKingOnNextMove(piece, kingCoordinates, piece.belongsTo, tileGraph);
       piece.blockerPieces.delete(targetTile.pieceData!.id);
     });
 
