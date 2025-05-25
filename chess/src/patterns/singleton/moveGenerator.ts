@@ -118,13 +118,13 @@ export default class MoveGenerator {
     return availableTilesToMovePawn;
   }
 
-  private _getMovesForKnight(tileCoordinate: Coordinate, tileGraph: TileGraph, playerTurn: Player): Array<Tile[]> {
+  private _getMovesForKnight(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [...tileGraph.getNeighbors(tileCoordinate)].filter(
       (neighborTile) => neighborTile[0] === tileCoordinate[0] || neighborTile[1] === tileCoordinate[1]
     );
 
+    const playerTurn = tileGraph.getTileByVertex(tileCoordinate).player;
     const neighborTilesAsSet = new Set(neighborTiles);
-
     const availableTilesToMoveKnight: Array<Tile[]> = [];
 
     neighborTiles.forEach((tile, index) => {
@@ -220,7 +220,7 @@ export default class MoveGenerator {
   getMoves(pieceType: PieceType, coordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const generator: Record<PieceType, () => Array<Tile[]>> = {
       pawn: () => this._getMovesForPawn(coordinate, tileGraph),
-      knight: () => this._getMovesForKnight(coordinate, tileGraph, "white"),
+      knight: () => this._getMovesForKnight(coordinate, tileGraph),
       bishop: () => this._getMovesForBishop(coordinate, tileGraph),
       rook: () => this._getMovesForRook(coordinate, tileGraph),
       queen: () => this._getMovesForQueen(coordinate, tileGraph),

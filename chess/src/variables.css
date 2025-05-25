@@ -1,0 +1,15 @@
+:root {
+  --tile-dimension: 6.4rem;
+}
+
+@media screen and (max-width: 72rem) {
+  :root {
+    --tile-dimension: 5.2rem;
+  }
+}
+
+@media screen and (max-width: 48rem) {
+  :root {
+    --tile-dimension: 3.6rem;
+  }
+}

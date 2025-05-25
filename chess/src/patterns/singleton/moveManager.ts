@@ -44,7 +44,8 @@ export default class MoveManager {
 
       for (sideIndex; sideIndex >= 0; sideIndex--) {
         if (
-          sides[sideIndex].getCoordinate() === kingCoordinates[`${playerTurn === "white" ? "black" : "white"}King`]
+          sides[sideIndex].getCoordinate() ===
+          kingCoordinates[`${piece.belongsTo === "white" ? "black" : "white"}King`]
         ) {
           hasFoundKing = true;
           continue;

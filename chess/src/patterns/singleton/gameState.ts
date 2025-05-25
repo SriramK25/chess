@@ -162,7 +162,11 @@ export default class GameState {
 
     let availableTilesToMovePiece: Array<Tile[]> = [];
 
-    if (targetTile.pieceData.nextMove.length && !targetTile.pieceData.isProtectingKingFromOpponentPiece) {
+    if (
+      targetTile.pieceData.nextMove.length &&
+      !targetTile.pieceData.isProtectingKingFromOpponentPiece &&
+      targetTile.pieceData.type !== "king"
+    ) {
       availableTilesToMovePiece = targetTile.pieceData.nextMove;
     } else if (targetTile.pieceData.nextMove.length) {
       availableTilesToMovePiece = this._moveManager.filterMoves(targetTile);
