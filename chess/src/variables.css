@@ -2,14 +2,14 @@
   --tile-dimension: 6.4rem;
 }
 
-@media screen and (max-width: 72rem) {
+@media screen and (max-width: 720px) {
   :root {
-    --tile-dimension: 5.2rem;
+    --tile-dimension: 5.6rem;
   }
 }
 
-@media screen and (max-width: 48rem) {
+@media screen and (max-width: 480px) {
   :root {
-    --tile-dimension: 3.6rem;
+    --tile-dimension: 4.2rem;
   }
 }
