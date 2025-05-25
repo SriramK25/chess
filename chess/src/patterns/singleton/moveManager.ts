@@ -3,6 +3,7 @@ import { PieceType, Player as PlayerType } from "../../types/unionTypes";
 import Piece from "../factory/pieceFactory";
 import Tile from "../factory/tileFactory";
 import MoveExecuter from "./moveExecuter";
+import MoveFilter from "./moveFilter";
 import MoveGenerator from "./moveGenerator";
 import TileGraph from "./tileGraph";
 
@@ -11,6 +12,7 @@ export default class MoveManager {
   static #instance: MoveManager | null = null;
   private _moveGenerator = MoveGenerator.getInstance();
   private _moveExecuter = MoveExecuter.getInstance();
+  private _moveFilter = MoveFilter.getInstance();
 
   private constructor() {}
 
@@ -57,28 +59,26 @@ export default class MoveManager {
     return availableTilesToMovePiece;
   }
 
+  filterMoves(targetTile: Tile) {
+    return this._moveFilter.filterMoves(targetTile);
+  }
+
   executeMove(targetTile: Tile, previouslyFocusedTileWithPiece: Tile | null) {
     this._moveExecuter.executeMove(targetTile, previouslyFocusedTileWithPiece);
   }
 
   // Checks Whether a Piece (Like Queen, Bishop etc...) can able to Check the Opponent's King, but some other Pieces are on the Way blocking the Path, So Storing that in Internal States to Avoid Players Accidentally Moving such pieces that exposes their King to Check
-  threatensKingOnNextMove(
-    targetPiece: Piece,
-    kingCoordinates: KingCoordinates,
-    playerTurn: PlayerType,
-    tileGraph: TileGraph
-  ) {
-    const potentialBlockerTiles: Tile[] = [];
+  threatensKingOnNextMove(piece: Piece, kingCoordinates: KingCoordinates, playerTurn: PlayerType) {
+    const blockerPieces: Piece[] = [];
 
-    for (let latentMoveTiles of targetPiece.nextMove) {
-      let latentMoveTileIndex = latentMoveTiles.length - 1;
+    for (let sides of piece.nextMove) {
+      let sideIndex = sides.length - 1;
       let hasFoundKing = false;
       let hasTargetPieceTileIncluded = false;
 
-      for (latentMoveTileIndex; latentMoveTileIndex >= 0; latentMoveTileIndex--) {
+      for (sideIndex; sideIndex >= 0; sideIndex--) {
         if (
-          latentMoveTiles[latentMoveTileIndex].getCoordinate() ===
-          kingCoordinates[`${playerTurn === "white" ? "black" : "white"}King`]
+          sides[sideIndex].getCoordinate() === kingCoordinates[`${playerTurn === "white" ? "black" : "white"}King`]
         ) {
           hasFoundKing = true;
           continue;
@@ -86,43 +86,39 @@ export default class MoveManager {
 
         if (!hasFoundKing) continue;
 
-        let tile = latentMoveTiles[latentMoveTileIndex];
+        let tile = sides[sideIndex];
+
+        if (!tile.pieceData) continue;
 
         if (!hasTargetPieceTileIncluded) {
           hasTargetPieceTileIncluded = true;
         }
 
-        if (tile.hasPiece) {
-          tile.pieceData?.blocking.set(targetPiece.id, targetPiece);
-          tile.pieceData!.isProtectingKingFromOpponentPiece =
-            tile.pieceData?.belongsTo !== playerTurn ? true : false;
-          potentialBlockerTiles.push(tile);
+        if (tile.hasPiece && tile.pieceData.belongsTo !== playerTurn) {
+          tile.pieceData.blocking.set(piece.id, piece);
+          tile.pieceData.isProtectingKingFromOpponentPiece = true;
+          blockerPieces.push(tile.pieceData);
         }
       }
     }
 
-    if (potentialBlockerTiles.length > 1) {
-      potentialBlockerTiles.forEach((blockerTile) => {
-        blockerTile.pieceData!.isProtectingKingFromOpponentPiece = false;
-      });
-    }
+    blockerPieces.forEach((blockerPiece) => {
+      piece.blockerPieces.set(blockerPiece.id, blockerPiece);
 
-    potentialBlockerTiles.map((blockerTile) =>
-      targetPiece.blockerPieces.set(blockerTile.pieceData!.id, blockerTile.pieceData!)
-    );
+      // Only One Piece is Protecting the King, So Making it Non-Movable
+      if (blockerPieces.length < 2) return;
+
+      // More than 1 Piece is Protecting King, So Making all the Pieces Movable
+      blockerPiece.isProtectingKingFromOpponentPiece = false;
+    });
   }
 
   checkMovingBlockerThreatensKing(targetTile: Tile, kingCoordinates: KingCoordinates, tileGraph: TileGraph) {
-    if (
-      !targetTile.pieceData ||
-      !targetTile.pieceData.blocking.size
-      // && !targetTile.piecesTargetingKingViaThisTile.size
-    )
-      return;
+    if (!targetTile.pieceData || !targetTile.pieceData.blocking.size) return;
 
     // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent Piece's Latent Check, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
     targetTile.pieceData.blocking.forEach((piece) => {
-      this.threatensKingOnNextMove(piece, kingCoordinates, piece.belongsTo, tileGraph);
+      this.threatensKingOnNextMove(piece, kingCoordinates, piece.belongsTo);
       piece.blockerPieces.delete(targetTile.pieceData!.id);
     });
 
