@@ -9,7 +9,7 @@ import { PlayersData } from "../../types/mapTypes";
 export default class Chessboard {
   private static _instance: Chessboard | null = null;
 
-  private _element = document.querySelector("#chess-board");
+  private _element: HTMLElement | null = document.querySelector("#chess-board");
   private _graph: TileGraph = new TileGraph();
   private _tiles: Tile[] = [];
   private _players: PlayersData;

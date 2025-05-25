@@ -9,7 +9,7 @@ import TileGraph from "./tileGraph";
 
 // This Class is responsible for Calculating Moves for the Selected Piece by Player
 export default class MoveManager {
-  static #instance: MoveManager | null = null;
+  static _instance: MoveManager | null = null;
   private _moveGenerator = MoveGenerator.getInstance();
   private _moveExecuter = MoveExecuter.getInstance();
   private _moveFilter = MoveFilter.getInstance();
@@ -17,8 +17,8 @@ export default class MoveManager {
   private constructor() {}
 
   static getInstance() {
-    if (!this.#instance) this.#instance = new MoveManager();
-    return this.#instance;
+    if (!this._instance) this._instance = new MoveManager();
+    return this._instance;
   }
 
   getMoves(pieceType: PieceType, coordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {

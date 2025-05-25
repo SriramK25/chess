@@ -3,19 +3,22 @@ import { PlayersData } from "../../types/mapTypes";
 import { PieceType, Player as PlayerType } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
 import MoveManager from "./moveManager";
+import Opponent from "./opponent";
 import TileGraph from "./tileGraph";
 
 export default class GameState {
-  static #instance: GameState | null = null;
+  private static _instance: GameState | null = null;
 
+  private _moveManager: MoveManager;
+  private _kingCoordinates!: KingCoordinates;
+  private _focusedPiece: PieceType | null = null;
+  private _players!: PlayersData;
+
+  opponent!: Opponent;
   playerTurn: PlayerType;
   history: Map<PlayerType, Move[]>;
   previouslyFocusedTileWithPiece: Tile | null = null;
   previousAvailableTilesToMovePiece: Array<Tile[]> = [];
-  private _moveManager: MoveManager;
-  #kingCoordinates!: KingCoordinates;
-  #focusedPiece: PieceType | null = null;
-  #players!: PlayersData;
 
   private constructor(playerTurn: PlayerType) {
     this.playerTurn = playerTurn;
@@ -24,13 +27,14 @@ export default class GameState {
   }
 
   static getInstance() {
-    if (!this.#instance) this.#instance = new GameState("white");
-    return this.#instance;
+    if (!this._instance) this._instance = new GameState("white");
+    return this._instance;
   }
 
   start(chessboardElement: Element, tileGraph: TileGraph, players: PlayersData, kingCoordinates: KingCoordinates) {
-    this.#kingCoordinates = kingCoordinates;
-    this.#players = players;
+    this._kingCoordinates = kingCoordinates;
+    this._players = players;
+    this.opponent = Opponent.getInstance(tileGraph);
     this.listenToBoard(chessboardElement, tileGraph);
   }
 
@@ -46,6 +50,8 @@ export default class GameState {
 
       const targetTile = tileGraph.getTileByVertex(target.dataset.coordinate as Coordinate);
 
+      if (!targetTile) return;
+
       if (["possible-move", "capture-move"].some((className) => target.classList.contains(className))) {
         // Move the Selected Piece
         this._moveManager.executeMove(targetTile, this.previouslyFocusedTileWithPiece);
@@ -58,6 +64,7 @@ export default class GameState {
 
       if (targetTile.player !== this.playerTurn) return;
 
+      // if (this.playerTurn === "white")
       this.allowPlayerToMovePiece(targetTile);
     });
   }
@@ -75,21 +82,21 @@ export default class GameState {
     if (targetTile.pieceData && targetTile.pieceData.type === "king") {
       const movedKingBelongsTo = targetTile.pieceData.belongsTo;
 
-      this.#kingCoordinates[`${movedKingBelongsTo}King`] = targetTile.getCoordinate();
+      this._kingCoordinates[`${movedKingBelongsTo}King`] = targetTile.getCoordinate();
 
       const opponent = movedKingBelongsTo === "white" ? "black" : "white";
 
-      this.#players.get(opponent)?.piecesOnBoard.forEach((piece) => {
+      this._players.get(opponent)?.piecesOnBoard.forEach((piece) => {
         if (piece.hasCaptured) return;
 
         piece.blockerPieces.clear();
         piece.blocking.clear();
 
-        this._moveManager.updateBlockers(piece, this.#kingCoordinates, opponent);
+        this._moveManager.updateBlockers(piece, this._kingCoordinates, opponent);
       });
     }
 
-    this._moveManager.checkMovingBlockerThreatensKing(targetTile, this.#kingCoordinates, tileGraph);
+    this._moveManager.checkMovingBlockerThreatensKing(targetTile, this._kingCoordinates, tileGraph);
 
     targetTile.pieceData!.blockerPieces.forEach((blockerPiece) => {
       blockerPiece.blocking.clear();
@@ -100,7 +107,7 @@ export default class GameState {
       if (
         !opponentPiece.nextMove.some((side) =>
           side.some(
-            (move) => move.getCoordinate() === this.#kingCoordinates[`${targetTile.pieceData!.belongsTo}King`]
+            (move) => move.getCoordinate() === this._kingCoordinates[`${targetTile.pieceData!.belongsTo}King`]
           )
         )
       )
@@ -142,7 +149,7 @@ export default class GameState {
     });
 
     // Check whether the Moved Piece's Next Move has King in its path (With & Without Blockers)
-    this._moveManager.updateBlockers(targetTile.pieceData!, this.#kingCoordinates, this.playerTurn);
+    this._moveManager.updateBlockers(targetTile.pieceData!, this._kingCoordinates, this.playerTurn);
   }
 
   private allowPlayerToMovePiece(targetTile: Tile) {
@@ -161,7 +168,7 @@ export default class GameState {
       availableTilesToMovePiece = this._moveManager.filterMoves(targetTile);
     }
 
-    this.#focusedPiece = targetTile.pieceData.type;
+    this._focusedPiece = targetTile.pieceData.type;
     this.updateGameState(availableTilesToMovePiece);
   }
 
@@ -169,17 +176,19 @@ export default class GameState {
     if (!this.previouslyFocusedTileWithPiece) return;
     Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
     this.playerTurn = this.playerTurn === "white" ? "black" : "white";
+
+    if (this.playerTurn === "black") this.opponent.sendFEN();
   }
 
   private updateGameState(availableTilesToMovePiece: Array<Tile[]>) {
     Tile.removePreviousAvailableMoves(this.previousAvailableTilesToMovePiece);
     this.previousAvailableTilesToMovePiece = availableTilesToMovePiece;
-    Tile.showAvailableMoves(availableTilesToMovePiece, this.playerTurn, this.#focusedPiece);
-    this.#focusedPiece = null;
+    Tile.showAvailableMoves(availableTilesToMovePiece, this.playerTurn, this._focusedPiece);
+    this._focusedPiece = null;
   }
 
   static reset(): void {
-    this.#instance = null;
+    this._instance = null;
     this.getInstance();
   }
 }

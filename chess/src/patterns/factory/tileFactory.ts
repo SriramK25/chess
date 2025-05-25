@@ -8,19 +8,19 @@ export default class Tile {
   player: string | null = null;
   hasPiece = false;
   pieceData: Piece | null = null;
-  element: Element;
+  element: HTMLElement;
   piecesTargetingThisTile: Map<string, Piece> = new Map();
   // piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
   // piecesTargetingNeighborTilesOfKing: Map<string, Piece> = new Map();
 
-  static chessboardElement: Element;
+  static chessboardElement: HTMLElement;
 
-  constructor(coordinate: Coordinate, tileElement: Element) {
+  constructor(coordinate: Coordinate, tileElement: HTMLElement) {
     this.#coordinate = coordinate;
     this.element = tileElement;
   }
 
-  static spawn(chessboardElement: Element, tiles: Tile[]): void {
+  static spawn(chessboardElement: HTMLElement, tiles: Tile[]): void {
     this.chessboardElement = chessboardElement;
     const tilesFragment = document.createDocumentFragment();
 
@@ -29,7 +29,7 @@ export default class Tile {
 
       tilesFragment.append(this.generateTileHTML(coordinate, tileColor));
 
-      const tileElement: Element | null = tilesFragment.querySelector(`#tile-${coordinate}`);
+      const tileElement: HTMLElement | null = tilesFragment.querySelector(`#tile-${coordinate}`);
 
       if (!tileElement) throw new Error("Tile not found while Initializing Chessboard");
 

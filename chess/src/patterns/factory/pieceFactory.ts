@@ -52,11 +52,13 @@ export default class Piece implements IPiece {
           if (!tile) throw new Error("Error occured while Spawning Pieces");
 
           const tileCoordinate = tile.getCoordinate();
-          const movesForThisPiece = gameState.getMoves(piece, tileCoordinate, tileGraph);
 
           tile.hasPiece = true;
           tile.player = player;
           tile.element.insertAdjacentHTML("beforeend", this._generatePiece(player, piece, tileCoordinate));
+
+          const movesForThisPiece = gameState.getMoves(piece, tileCoordinate, tileGraph);
+
           tile.pieceData = new Piece(player, piece, tileCoordinate, movesForThisPiece);
 
           if (piece === "king") kingCoordinates[`${player}King`] = tileCoordinate;
