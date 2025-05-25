@@ -22,41 +22,7 @@ export default class MoveManager {
   }
 
   getMoves(pieceType: PieceType, coordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
-    let availableTilesToMovePiece: Array<Tile[]> = [];
-
-    switch (pieceType) {
-      case "pawn": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForPawn(coordinate, tileGraph);
-        break;
-      }
-
-      case "king": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForKing(coordinate, tileGraph);
-        break;
-      }
-
-      case "queen": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForQueen(coordinate, tileGraph);
-        break;
-      }
-
-      case "bishop": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForBishop(coordinate, tileGraph);
-        break;
-      }
-
-      case "knight": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForKnight(coordinate, tileGraph, this.playerTurn);
-        break;
-      }
-
-      case "rook": {
-        availableTilesToMovePiece = this._moveGenerator.getMovesForRook(coordinate, tileGraph);
-        break;
-      }
-    }
-
-    return availableTilesToMovePiece;
+    return this._moveGenerator.getMoves(pieceType, coordinate, tileGraph);
   }
 
   filterMoves(targetTile: Tile) {
@@ -68,7 +34,7 @@ export default class MoveManager {
   }
 
   // Checks Whether a Piece (Like Queen, Bishop etc...) can able to Check the Opponent's King, but some other Pieces are on the Way blocking the Path, So Storing that in Internal States to Avoid Players Accidentally Moving such pieces that exposes their King to Check
-  threatensKingOnNextMove(piece: Piece, kingCoordinates: KingCoordinates, playerTurn: PlayerType) {
+  updateBlockers(piece: Piece, kingCoordinates: KingCoordinates, playerTurn: PlayerType) {
     const blockerPieces: Piece[] = [];
 
     for (let sides of piece.nextMove) {
@@ -113,12 +79,12 @@ export default class MoveManager {
     });
   }
 
+  // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
   checkMovingBlockerThreatensKing(targetTile: Tile, kingCoordinates: KingCoordinates, tileGraph: TileGraph) {
     if (!targetTile.pieceData || !targetTile.pieceData.blocking.size) return;
 
-    // If the Moved Piece has Blocked the Path of opponent piece, then We Update that Opponent Piece's Latent Check, because a Piece blocking its Way is moved and we need to Update it, so we can restrict to move the Last piece which is Protecting the King
     targetTile.pieceData.blocking.forEach((piece) => {
-      this.threatensKingOnNextMove(piece, kingCoordinates, piece.belongsTo);
+      this.updateBlockers(piece, kingCoordinates, piece.belongsTo);
       piece.blockerPieces.delete(targetTile.pieceData!.id);
     });
 

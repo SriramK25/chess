@@ -1,6 +1,6 @@
 import { BOARD } from "../../rules/indexRules";
 import { Coordinate } from "../../types/indexedAccessTypes";
-import { Player } from "../../types/unionTypes";
+import { PieceType, Player } from "../../types/unionTypes";
 import Tile from "../factory/tileFactory";
 import TileGraph from "./tileGraph";
 
@@ -81,7 +81,7 @@ export default class MoveGenerator {
     return diagonalCoordinates;
   }
 
-  getMovesForPawn(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+  private _getMovesForPawn(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const targetTile = tileGraph.getTileByVertex(tileCoordinate);
 
     const neighborTiles: Coordinate[] = [...tileGraph.getNeighbors(tileCoordinate)];
@@ -118,7 +118,7 @@ export default class MoveGenerator {
     return availableTilesToMovePawn;
   }
 
-  getMovesForKnight(tileCoordinate: Coordinate, tileGraph: TileGraph, playerTurn: Player): Array<Tile[]> {
+  private _getMovesForKnight(tileCoordinate: Coordinate, tileGraph: TileGraph, playerTurn: Player): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [...tileGraph.getNeighbors(tileCoordinate)].filter(
       (neighborTile) => neighborTile[0] === tileCoordinate[0] || neighborTile[1] === tileCoordinate[1]
     );
@@ -146,7 +146,7 @@ export default class MoveGenerator {
     return availableTilesToMoveKnight;
   }
 
-  getMovesForBishop(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+  private _getMovesForBishop(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [...tileGraph.getNeighbors(tileCoordinate)].filter(
       (neighborTile) => neighborTile[0] !== tileCoordinate[0] && neighborTile[1] !== tileCoordinate[1]
     );
@@ -174,7 +174,7 @@ export default class MoveGenerator {
     return availableTilesToMoveBishop;
   }
 
-  getMovesForRook(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+  private _getMovesForRook(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const neighborTiles: Coordinate[] = [...tileGraph.getNeighbors(tileCoordinate)].filter(
       (neighborTile) => neighborTile[0] === tileCoordinate[0] || neighborTile[1] === tileCoordinate[1]
     );
@@ -198,7 +198,7 @@ export default class MoveGenerator {
     return availableTilesToMoveRook;
   }
 
-  getMovesForKing(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+  private _getMovesForKing(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     const neighborTileCoordinates = [...tileGraph.getNeighbors(tileCoordinate)];
 
     const availableTilesToMoveKing: Array<Tile[]> = [];
@@ -210,10 +210,23 @@ export default class MoveGenerator {
     return availableTilesToMoveKing;
   }
 
-  getMovesForQueen(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+  private _getMovesForQueen(tileCoordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
     return [
-      ...this.getMovesForBishop(tileCoordinate, tileGraph),
-      ...this.getMovesForRook(tileCoordinate, tileGraph),
+      ...this._getMovesForBishop(tileCoordinate, tileGraph),
+      ...this._getMovesForRook(tileCoordinate, tileGraph),
     ];
+  }
+
+  getMoves(pieceType: PieceType, coordinate: Coordinate, tileGraph: TileGraph): Array<Tile[]> {
+    const generator: Record<PieceType, () => Array<Tile[]>> = {
+      pawn: () => this._getMovesForPawn(coordinate, tileGraph),
+      knight: () => this._getMovesForKnight(coordinate, tileGraph, "white"),
+      bishop: () => this._getMovesForBishop(coordinate, tileGraph),
+      rook: () => this._getMovesForRook(coordinate, tileGraph),
+      queen: () => this._getMovesForQueen(coordinate, tileGraph),
+      king: () => this._getMovesForKing(coordinate, tileGraph),
+    };
+
+    return generator[pieceType]() ?? [];
   }
 }

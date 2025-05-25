@@ -85,7 +85,7 @@ export default class GameState {
         piece.blockerPieces.clear();
         piece.blocking.clear();
 
-        this._moveManager.threatensKingOnNextMove(piece, this.#kingCoordinates, opponent, tileGraph);
+        this._moveManager.updateBlockers(piece, this.#kingCoordinates, opponent);
       });
     }
 
@@ -142,12 +142,7 @@ export default class GameState {
     });
 
     // Check whether the Moved Piece's Next Move has King in its path (With & Without Blockers)
-    this._moveManager.threatensKingOnNextMove(
-      targetTile.pieceData!,
-      this.#kingCoordinates,
-      this.playerTurn,
-      tileGraph
-    );
+    this._moveManager.updateBlockers(targetTile.pieceData!, this.#kingCoordinates, this.playerTurn);
   }
 
   private allowPlayerToMovePiece(targetTile: Tile) {
