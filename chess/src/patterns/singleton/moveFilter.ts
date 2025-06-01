@@ -18,7 +18,8 @@ export default class MoveFilter {
 
     for (let nextMoveSide of targetTile.pieceData.nextMove) {
       // With this If we only Check Empty Tiles
-      if (nextMoveSide[0].hasPiece) continue;
+      if (nextMoveSide[0].hasPiece && targetTile.pieceData.belongsTo === nextMoveSide[0].pieceData?.belongsTo)
+        continue;
 
       const piecesTargetingNextMoveTileOfKing = Array.from(
         nextMoveSide[0].piecesTargetingThisTile.values()
@@ -42,8 +43,10 @@ export default class MoveFilter {
 
         for (let tile of kingSideMoves) {
           if (tile.getCoordinate() === nextMoveSide[0].getCoordinate()) break;
-          if (tile.hasPiece) return true;
+          if (tile.hasPiece) return false;
         }
+
+        return false;
       });
 
       isSafeTile && newLatentMoveSide.push(nextMoveSide[0]);
