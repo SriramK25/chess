@@ -4,19 +4,17 @@ import { PieceType, Player } from "../../types/unionTypes";
 import Piece from "./pieceFactory";
 
 export default class Tile {
-  #coordinate: Coordinate;
+  private _coordinate: Coordinate;
   player: string | null = null;
   hasPiece = false;
   pieceData: Piece | null = null;
   element: HTMLElement;
   piecesTargetingThisTile: Map<string, Piece> = new Map();
-  // piecesTargetingKingViaThisTile: Map<string, Piece> = new Map();
-  // piecesTargetingNeighborTilesOfKing: Map<string, Piece> = new Map();
 
   static chessboardElement: HTMLElement;
 
   constructor(coordinate: Coordinate, tileElement: HTMLElement) {
-    this.#coordinate = coordinate;
+    this._coordinate = coordinate;
     this.element = tileElement;
   }
 
@@ -60,7 +58,7 @@ export default class Tile {
   }
 
   getCoordinate(): Coordinate {
-    return this.#coordinate;
+    return this._coordinate;
   }
 
   static showAvailableMoves(
@@ -123,6 +121,7 @@ export default class Tile {
 
     if (toTileHasPiece) {
       this.pieceData!.hasCaptured = true;
+      Tile.removePieceScopeFromTiles(this.pieceData!.nextMove, this.pieceData!.id);
       this.element.querySelector("img[id$='piece']")?.remove();
     }
 
@@ -134,8 +133,6 @@ export default class Tile {
     this.pieceData = fromTile.pieceData;
     this.pieceData!.onTile = this.getCoordinate();
     this.pieceData!.hasMoved = true;
-    // this.pieceData!.blockerPieces.clear();
-    // this.updatePiecesTargetingKingViaTiles(this.pieceData!);
     this.changeStatusOfSenderTile(fromTile);
   }
 
@@ -146,21 +143,15 @@ export default class Tile {
     fromTile.removeFocus();
   }
 
-  // private updatePiecesTargetingKingViaTiles(piece: Piece) {
-  //   if (!piece)
-  //     throw new Error("Piece Not Found while trying to update Tile Data");
+  static removePieceScopeFromTiles(moves: Array<Tile[]>, pieceId: string) {
+    if (!moves || !moves.length || !pieceId) return;
 
-  //   piece.targetingOpponentKingViaTiles.forEach((tile) => {
-  //     tile.piecesTargetingKingViaThisTile.delete(piece.id);
-
-  //     if (!tile.hasPiece || !tile.pieceData) return;
-
-  //     tile.pieceData.isProtectingKingFromOpponentPiece = false;
-  //     tile.pieceData.blocking.delete(piece.id);
-  //   });
-
-  //   piece.targetingOpponentKingViaTiles.clear();
-  // }
+    moves.forEach((sides) => {
+      sides.forEach((tile) => {
+        tile.piecesTargetingThisTile.delete(pieceId);
+      });
+    });
+  }
 
   addFocus(): void {
     this.element.classList.add("focused");

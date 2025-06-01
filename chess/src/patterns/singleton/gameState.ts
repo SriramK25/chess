@@ -86,12 +86,14 @@ export default class GameState {
 
       const opponent = movedKingBelongsTo === "white" ? "black" : "white";
 
+      this._players.get(movedKingBelongsTo)?.piecesOnBoard.forEach((piece) => {
+        piece.isProtectingKingFromOpponentPiece = false;
+        piece.blocking.clear();
+      });
+
       this._players.get(opponent)?.piecesOnBoard.forEach((piece) => {
         if (piece.hasCaptured) return;
-
         piece.blockerPieces.clear();
-        piece.blocking.clear();
-
         this._moveManager.updateBlockers(piece, this._kingCoordinates, opponent);
       });
     }
@@ -110,6 +112,12 @@ export default class GameState {
             (move) => move.getCoordinate() === this._kingCoordinates[`${targetTile.pieceData!.belongsTo}King`]
           )
         )
+      )
+        return;
+
+      if (
+        (targetTile.pieceData && opponentPiece.belongsTo === targetTile.pieceData.belongsTo) ||
+        targetTile.pieceData?.type === "knight"
       )
         return;
 
@@ -141,7 +149,9 @@ export default class GameState {
     );
 
     // Register Moved Piece's Next move to the Tiles
-    targetTile.pieceData?.nextMove.forEach((side) => {
+    targetTile.pieceData?.nextMove.forEach((side, index) => {
+      if (targetTile.pieceData && targetTile.pieceData.type === "pawn" && index === 0) return;
+
       side.forEach((move) => {
         if (!targetTile.pieceData) return;
         move.piecesTargetingThisTile.set(targetTile.pieceData.id, targetTile.pieceData);

@@ -6,10 +6,11 @@ export default class Opponent {
   private static _instance: Opponent | null = null;
   private _tilegraph: TileGraph;
   private _player: Worker;
+  private _isThinking = false;
   private _fenCode = {
     pawn: "p",
     knight: "n",
-    bishop: "p",
+    bishop: "b",
     rook: "r",
     queen: "q",
     king: "k",
@@ -62,7 +63,10 @@ export default class Opponent {
   }
 
   sendFEN(depth: number = 10) {
+    if (this._isThinking) return;
+
     const fenString = this.buildFEN(this._tilegraph);
+    this._isThinking = true;
     this._player.postMessage(`position fen ${fenString}`);
     this._player.postMessage(`go depth ${depth}`);
   }
@@ -74,8 +78,9 @@ export default class Opponent {
     const fromCoordinate = bestMove.slice(0, 2) as Coordinate;
     const toCoordinate = bestMove.slice(2) as Coordinate;
     const targetCoordinates = [fromCoordinate, toCoordinate];
-
     const isValidMove = this.validateGeneratedMove(targetCoordinates);
+
+    this._isThinking = false;
 
     if (!isValidMove) {
       const recomputedDepth = this.recomputeDepth(10);
@@ -103,6 +108,6 @@ export default class Opponent {
   }
 
   recomputeDepth(previousDepth: number): number {
-    return Math.floor(previousDepth + Math.random() * 10);
+    return previousDepth > 0 ? previousDepth-- : previousDepth++;
   }
 }

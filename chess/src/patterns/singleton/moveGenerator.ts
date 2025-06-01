@@ -136,10 +136,7 @@ export default class MoveGenerator {
 
       neighborsOfNeighborTile.forEach((neighborTile) => {
         const tile = tileGraph.getTileByVertex(neighborTile);
-
-        !neighborTilesAsSet.has(neighborTile) &&
-          tile.player !== playerTurn &&
-          availableTilesToMoveKnight[index].push(tile);
+        !neighborTilesAsSet.has(neighborTile) && availableTilesToMoveKnight[index].push(tile);
       });
     });
 

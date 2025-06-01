@@ -35,6 +35,8 @@ export default class MoveManager {
 
   // Checks Whether a Piece (Like Queen, Bishop etc...) can able to Check the Opponent's King, but some other Pieces are on the Way blocking the Path, So Storing that in Internal States to Avoid Players Accidentally Moving such pieces that exposes their King to Check
   updateBlockers(piece: Piece, kingCoordinates: KingCoordinates, playerTurn: PlayerType) {
+    if (piece && piece.type === "knight") return;
+
     const blockerPieces: Piece[] = [];
 
     for (let sides of piece.nextMove) {
@@ -61,10 +63,14 @@ export default class MoveManager {
           hasTargetPieceTileIncluded = true;
         }
 
-        if (tile.hasPiece && tile.pieceData.belongsTo !== playerTurn) {
+        if (tile.hasPiece) {
           tile.pieceData.blocking.set(piece.id, piece);
-          tile.pieceData.isProtectingKingFromOpponentPiece = true;
           blockerPieces.push(tile.pieceData);
+
+          if (tile.pieceData.belongsTo !== playerTurn) {
+            console.log(`${tile.pieceData.type} from ${tile.getCoordinate()}`, "is protecting king");
+            tile.pieceData.isProtectingKingFromOpponentPiece = true;
+          }
         }
       }
     }
@@ -73,8 +79,9 @@ export default class MoveManager {
       piece.blockerPieces.set(blockerPiece.id, blockerPiece);
 
       // Only One Piece is Protecting the King, So Making it Non-Movable
-      if (blockerPieces.length < 2) return;
+      if (blockerPieces.length < 2 && blockerPiece.belongsTo !== playerTurn) return;
 
+      console.log("More than 1 Piece is Protecting King");
       // More than 1 Piece is Protecting King, So Making all the Pieces Movable
       blockerPiece.isProtectingKingFromOpponentPiece = false;
     });
